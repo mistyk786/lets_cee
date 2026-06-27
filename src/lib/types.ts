@@ -218,6 +218,12 @@ export type ActiveAutomation = {
 export type ActivationPreview = {
   triggerLabel?: string;
   draftReply?: string;
+  replySource?: "cursor" | "template";
+  originalEmail?: {
+    subject: string;
+    sender: string;
+    body: string;
+  };
   proposedSlots?: string[];
   slotCount?: number;
   tentativeEventTitle?: string;

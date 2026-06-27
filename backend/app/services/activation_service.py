@@ -22,6 +22,7 @@ from app.schemas import AutomationRule
 from app.services.calendar_service import find_available_slots
 from app.services.demo_data import load_demo_workflow
 from app.services import ingestion_service
+from app.services.reply_service import generate_scheduling_reply
 
 
 def _next_scheduling_day() -> str:
@@ -140,7 +141,11 @@ def activate(
     )
     slots = [TimeSlot(**s) for s in raw_slots]
 
-    draft = _draft_reply(email["sender"], slots)
+    draft, reply_source = generate_scheduling_reply(
+        incoming_email=email,
+        proposed_slots=slots,
+        rules=active_rules,
+    )
 
     tentative_event: TentativeEvent | None = None
     created_event_id: str | None = None
@@ -168,7 +173,10 @@ def activate(
     return ActivationResponse(
         rules=active_rules,
         processed_email_subject=email["subject"],
+        processed_email_sender=str(email.get("sender", "")),
+        processed_email_body=str(email.get("body", "")),
         draft_reply=draft,
+        reply_source=reply_source,
         proposed_slots=slots,
         tentative_event=tentative_event,
         run=run,

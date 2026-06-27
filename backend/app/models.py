@@ -69,11 +69,14 @@ class AutomationRun(BaseModel):
 
 
 class ActivationResponse(BaseModel):
-    """Result of activating the automation against one mock scheduling email."""
+    """Result of activating the automation against one scheduling email."""
 
     rules: AutomationRule
     processed_email_subject: str
+    processed_email_sender: str | None = None
+    processed_email_body: str | None = None
     draft_reply: str
+    reply_source: str = "template"  # "cursor" | "template"
     proposed_slots: list[TimeSlot]
     tentative_event: TentativeEvent | None = None
     run: AutomationRun
