@@ -7,7 +7,34 @@ post-automation Effectiveness Score.
 
 from __future__ import annotations
 
-from app.schemas import EffectivenessMetrics, ForecastMetrics
+from app.constants import (
+    EFFECTIVENESS_SAFETY_CAP,
+    EFFECTIVENESS_WEIGHT_ACCEPTANCE,
+    EFFECTIVENESS_WEIGHT_COVERAGE,
+    EFFECTIVENESS_WEIGHT_CYCLE_TIME,
+    EFFECTIVENESS_WEIGHT_QUALITY,
+    EFFECTIVENESS_WEIGHT_REALISED_TIME,
+    EFFECTIVENESS_WEIGHT_RELIABILITY,
+    FORECAST_CONSERVATIVE_FACTOR,
+    FORECAST_OPTIMISTIC_FACTOR,
+    OPPORTUNITY_WEIGHT_CONSISTENCY,
+    OPPORTUNITY_WEIGHT_DATA_AVAILABILITY,
+    OPPORTUNITY_WEIGHT_MANUAL_EFFORT,
+    OPPORTUNITY_WEIGHT_REPETITION,
+    OPPORTUNITY_WEIGHT_RISK,
+)
+from app.schemas import (
+    EffectivenessInputs,
+    EffectivenessMetrics,
+    ForecastInputs,
+    ForecastMetrics,
+    OpportunityInputs,
+)
+
+
+def _clamp_unit(value: float) -> float:
+    """Clamp a ratio-style input to the 0-1 range."""
+    return max(0.0, min(1.0, value))
 
 
 def calculate_opportunity_score(
@@ -20,15 +47,33 @@ def calculate_opportunity_score(
     """Score how worthwhile automating a workflow is, on a 0-100 scale.
 
     All inputs are normalised 0-1 signals. Risk subtracts from the score.
+    Out-of-range inputs are clamped before scoring.
     """
+    repetition = _clamp_unit(repetition)
+    manual_effort = _clamp_unit(manual_effort)
+    consistency = _clamp_unit(consistency)
+    data_availability = _clamp_unit(data_availability)
+    risk = _clamp_unit(risk)
+
     score = (
-        repetition * 30
-        + manual_effort * 25
-        + consistency * 20
-        + data_availability * 15
-        - risk * 10
+        repetition * OPPORTUNITY_WEIGHT_REPETITION
+        + manual_effort * OPPORTUNITY_WEIGHT_MANUAL_EFFORT
+        + consistency * OPPORTUNITY_WEIGHT_CONSISTENCY
+        + data_availability * OPPORTUNITY_WEIGHT_DATA_AVAILABILITY
+        - risk * OPPORTUNITY_WEIGHT_RISK
     )
     return round(max(0, min(100, score)), 2)
+
+
+def score_opportunity(inputs: OpportunityInputs) -> float:
+    """Typed wrapper around ``calculate_opportunity_score``."""
+    return calculate_opportunity_score(
+        inputs.repetition,
+        inputs.manual_effort,
+        inputs.consistency,
+        inputs.data_availability,
+        inputs.risk,
+    )
 
 
 def calculate_forecast(
@@ -41,8 +86,8 @@ def calculate_forecast(
     base = eligible_runs * (manual_minutes_per_run - review_minutes_per_run)
 
     likely_minutes = base - exception_minutes
-    conservative_minutes = likely_minutes * 0.7
-    optimistic_minutes = likely_minutes * 1.2
+    conservative_minutes = likely_minutes * FORECAST_CONSERVATIVE_FACTOR
+    optimistic_minutes = likely_minutes * FORECAST_OPTIMISTIC_FACTOR
 
     return ForecastMetrics(
         eligible_runs=eligible_runs,
@@ -52,6 +97,16 @@ def calculate_forecast(
         conservative_hours_saved=round(conservative_minutes / 60, 2),
         likely_hours_saved=round(likely_minutes / 60, 2),
         optimistic_hours_saved=round(optimistic_minutes / 60, 2),
+    )
+
+
+def forecast_time_saved(inputs: ForecastInputs) -> ForecastMetrics:
+    """Typed wrapper around ``calculate_forecast``."""
+    return calculate_forecast(
+        inputs.eligible_runs,
+        inputs.manual_minutes_per_run,
+        inputs.review_minutes_per_run,
+        inputs.exception_minutes,
     )
 
 
@@ -79,13 +134,21 @@ def calculate_effectiveness(
 
     A major error caps the overall score at 40 and flags the automation for
     review, regardless of how well individual dimensions scored.
+    Ratios above 1.0 are clamped to 1.0 before scoring.
     """
-    realised_time_score = realised_time_ratio * 30
-    coverage_score = coverage_ratio * 20
-    reliability_score = reliability_ratio * 20
-    quality_score = rework_ratio * 15
-    cycle_time_score = cycle_time_ratio * 10
-    acceptance_score = acceptance_ratio * 5
+    realised_time_ratio = _clamp_unit(realised_time_ratio)
+    coverage_ratio = _clamp_unit(coverage_ratio)
+    reliability_ratio = _clamp_unit(reliability_ratio)
+    rework_ratio = _clamp_unit(rework_ratio)
+    cycle_time_ratio = _clamp_unit(cycle_time_ratio)
+    acceptance_ratio = _clamp_unit(acceptance_ratio)
+
+    realised_time_score = realised_time_ratio * EFFECTIVENESS_WEIGHT_REALISED_TIME
+    coverage_score = coverage_ratio * EFFECTIVENESS_WEIGHT_COVERAGE
+    reliability_score = reliability_ratio * EFFECTIVENESS_WEIGHT_RELIABILITY
+    quality_score = rework_ratio * EFFECTIVENESS_WEIGHT_QUALITY
+    cycle_time_score = cycle_time_ratio * EFFECTIVENESS_WEIGHT_CYCLE_TIME
+    acceptance_score = acceptance_ratio * EFFECTIVENESS_WEIGHT_ACCEPTANCE
 
     overall = min(
         realised_time_score
@@ -99,7 +162,7 @@ def calculate_effectiveness(
 
     if has_major_error:
         safety_status: str = "needs_review"
-        overall_score = min(overall, 40)
+        overall_score = min(overall, EFFECTIVENESS_SAFETY_CAP)
         recommendation = (
             "Automation paused for review. "
             "Check flagged runs before re-enabling."
@@ -119,4 +182,17 @@ def calculate_effectiveness(
         safety_status=safety_status,  # type: ignore[arg-type]
         overall_score=round(overall_score, 2),
         recommendation=recommendation,
+    )
+
+
+def score_effectiveness(inputs: EffectivenessInputs) -> EffectivenessMetrics:
+    """Typed wrapper around ``calculate_effectiveness``."""
+    return calculate_effectiveness(
+        inputs.realised_time_ratio,
+        inputs.coverage_ratio,
+        inputs.reliability_ratio,
+        inputs.rework_ratio,
+        inputs.cycle_time_ratio,
+        inputs.acceptance_ratio,
+        inputs.has_major_error,
     )

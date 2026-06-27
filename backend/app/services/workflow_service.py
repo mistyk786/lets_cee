@@ -9,15 +9,18 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 
+from app.config import Settings, get_settings
+from app.constants import DEFAULT_OPENAI_MAX_TOKENS, DEFAULT_OPENAI_MODEL
 from app.schemas import DetectedWorkflow
+from app.services.automation_service import generate_automation_proposal
 from app.services.demo_data import load_demo_workflow
 
 logger = logging.getLogger(__name__)
 
-MODEL = "gpt-4o-mini"
-MAX_TOKENS = 1500
+# Re-exported for tests and backward compatibility.
+MODEL = DEFAULT_OPENAI_MODEL
+MAX_TOKENS = DEFAULT_OPENAI_MAX_TOKENS
 
 SYSTEM_PROMPT = """\
 You are a workflow analyst for Sloth.ai. You analyse raw email threads to \
@@ -71,32 +74,48 @@ current_steps and bottlenecks.\
 """
 
 
-def _build_client():
+def _build_client(settings: Settings):
     """Construct an OpenAI client. Imported lazily so the module loads even
     when the SDK or API key is absent (e.g. in CI running only scoring tests)."""
     from openai import OpenAI
 
-    api_key = os.environ.get("OPENAI_API_KEY")
-    if not api_key:
+    if not settings.openai_configured:
         raise RuntimeError("OPENAI_API_KEY is not set")
-    return OpenAI(api_key=api_key)
+    return OpenAI(api_key=settings.openai_api_key)
 
 
-def extract_workflow(email_threads: list[dict]) -> DetectedWorkflow:
-    """Detect a repeated workflow from raw email threads.
+def _apply_rule_based_proposal(workflow: DetectedWorkflow) -> DetectedWorkflow:
+    return workflow.model_copy(
+        update={"automation_proposal": generate_automation_proposal(workflow)}
+    )
 
-    Calls OpenAI with a structured prompt and validates the JSON response
-    against ``DetectedWorkflow``. On any API or parse failure, returns
-    ``load_demo_workflow()`` so downstream consumers always get valid data.
+
+def extract_workflow_with_meta(
+    email_threads: list[dict],
+    *,
+    demo_mode: bool = False,
+    settings: Settings | None = None,
+) -> tuple[DetectedWorkflow, bool]:
+    """Detect a repeated workflow, reporting whether demo data was used.
+
+    Returns ``(workflow, used_demo_data)`` where ``used_demo_data`` is True
+    when demo mode was requested OR the live extraction failed and fell back
+    to demo data. This lets callers surface data provenance to consumers.
     """
+    active_settings = settings or get_settings()
+
+    if demo_mode:
+        logger.info("extract_workflow running in explicit demo mode")
+        return load_demo_workflow(), True
+
     try:
-        client = _build_client()
+        client = _build_client(active_settings)
 
         user_message = json.dumps({"email_threads": email_threads})
 
         response = client.chat.completions.create(
-            model=MODEL,
-            max_tokens=MAX_TOKENS,
+            model=active_settings.openai_model,
+            max_tokens=active_settings.openai_max_tokens,
             response_format={"type": "json_object"},
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
@@ -108,9 +127,32 @@ def extract_workflow(email_threads: list[dict]) -> DetectedWorkflow:
         if not content:
             raise ValueError("OpenAI returned empty content")
 
-        return DetectedWorkflow.model_validate(json.loads(content.strip()))
+        workflow = DetectedWorkflow.model_validate(json.loads(content.strip()))
+        return _apply_rule_based_proposal(workflow), False
     except Exception as exc:  # noqa: BLE001 - any failure -> safe fallback
         logger.warning(
             "extract_workflow falling back to demo data: %s", exc
         )
-        return load_demo_workflow()
+        return load_demo_workflow(), True
+
+
+def extract_workflow(
+    email_threads: list[dict],
+    *,
+    demo_mode: bool = False,
+    settings: Settings | None = None,
+) -> DetectedWorkflow:
+    """Detect a repeated workflow from raw email threads.
+
+    Calls OpenAI with a structured prompt and validates the JSON response
+    against ``DetectedWorkflow``. On any API or parse failure, returns
+    ``load_demo_workflow()`` so downstream consumers always get valid data.
+
+    Set ``demo_mode=True`` to skip the LLM call entirely (useful for demos,
+    CI, and environments without an API key). Use ``extract_workflow_with_meta``
+    if you need to know whether demo/fallback data was returned.
+    """
+    workflow, _ = extract_workflow_with_meta(
+        email_threads, demo_mode=demo_mode, settings=settings
+    )
+    return workflow

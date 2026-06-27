@@ -7,6 +7,9 @@ Used as a fallback when:
 
 Values model a realistic email-to-calendar scheduling workflow so the demo
 always has something convincing to show.
+
+Forecast and effectiveness metrics are derived from the scoring functions so
+they cannot drift. ``opportunity_score`` stays at the spec value (78.5).
 """
 
 from __future__ import annotations
@@ -19,6 +22,27 @@ from app.schemas import (
     ForecastMetrics,
     WorkflowStep,
 )
+from app.services.automation_service import generate_automation_proposal
+from app.services.scoring_service import calculate_effectiveness, calculate_forecast
+
+# Spec-required constants — do not derive these.
+_DEMO_OCCURRENCE_COUNT = 47
+_DEMO_OPPORTUNITY_SCORE = 78.5
+_DEMO_FORECAST_INPUTS = {
+    "eligible_runs": 40,
+    "manual_minutes_per_run": 18.0,
+    "review_minutes_per_run": 3.0,
+    "exception_minutes": 12.0,
+}
+_DEMO_EFFECTIVENESS_INPUTS = {
+    "realised_time_ratio": 0.8,
+    "coverage_ratio": 0.8,
+    "reliability_ratio": 0.75,
+    "rework_ratio": 0.8,
+    "cycle_time_ratio": 0.5,
+    "acceptance_ratio": 0.4,
+    "has_major_error": False,
+}
 
 
 def _demo_steps() -> list[WorkflowStep]:
@@ -122,79 +146,15 @@ def _demo_automation_rules() -> AutomationRule:
     )
 
 
-def _demo_automation_proposal() -> list[WorkflowStep]:
-    """Future-state proposal derived from the demo steps.
-
-    Built statically here to keep demo mode self-contained; the live path
-    uses ``automation_service.generate_automation_proposal``.
-    """
-    return [
-        WorkflowStep(
-            step_id="step_1",
-            name="Read incoming meeting request",
-            description="Auto-detect scheduling intent from inbound email.",
-            is_manual=False,
-            avg_minutes=2.0,
-            is_automatable=True,
-            requires_approval=False,
-        ),
-        WorkflowStep(
-            step_id="step_2",
-            name="Identify attendees and intent",
-            description="Extract attendees and purpose via NLP.",
-            is_manual=False,
-            avg_minutes=2.5,
-            is_automatable=True,
-            requires_approval=False,
-        ),
-        WorkflowStep(
-            step_id="step_3",
-            name="Check calendar availability",
-            description="Query free/busy across attendees automatically.",
-            is_manual=False,
-            avg_minutes=4.0,
-            is_automatable=True,
-            requires_approval=False,
-        ),
-        WorkflowStep(
-            step_id="step_4",
-            name="Draft proposed time slots",
-            description="Generate candidate slots within working hours.",
-            is_manual=False,
-            avg_minutes=3.0,
-            is_automatable=True,
-            requires_approval=False,
-        ),
-        WorkflowStep(
-            step_id="step_5",
-            name="[Approval] Confirm time with manager",
-            description="Human checkpoint: approve slots before sending.",
-            is_manual=True,
-            avg_minutes=2.0,
-            is_automatable=True,
-            requires_approval=True,
-        ),
-        WorkflowStep(
-            step_id="step_6",
-            name="Send calendar invite",
-            description="Create the event and dispatch invites automatically.",
-            is_manual=False,
-            avg_minutes=2.5,
-            is_automatable=True,
-            requires_approval=False,
-        ),
-    ]
-
-
-def load_demo_workflow() -> DetectedWorkflow:
-    """Return a realistic detected scheduling workflow for demos/fallback."""
+def _build_demo_workflow_shell() -> DetectedWorkflow:
+    """Build the workflow without a proposal (proposal added after)."""
     return DetectedWorkflow(
         workflow_name="Email-to-Calendar Meeting Scheduling",
-        occurrence_count=47,
+        occurrence_count=_DEMO_OCCURRENCE_COUNT,
         current_steps=_demo_steps(),
         bottlenecks=_demo_bottlenecks(),
-        opportunity_score=78.5,
-        automation_proposal=_demo_automation_proposal(),
+        opportunity_score=_DEMO_OPPORTUNITY_SCORE,
+        automation_proposal=[],
         assumptions=[
             "Meetings default to 30 minutes unless stated otherwise.",
             "Scheduling stays within 09:00-18:00 working hours.",
@@ -205,29 +165,21 @@ def load_demo_workflow() -> DetectedWorkflow:
     )
 
 
+def load_demo_workflow() -> DetectedWorkflow:
+    """Return a realistic detected scheduling workflow for demos/fallback."""
+    workflow = _build_demo_workflow_shell()
+    return workflow.model_copy(
+        update={
+            "automation_proposal": generate_automation_proposal(workflow),
+        }
+    )
+
+
 def load_demo_forecast() -> ForecastMetrics:
     """Return a realistic time-saved forecast for demos/fallback."""
-    return ForecastMetrics(
-        eligible_runs=40,
-        manual_minutes_per_run=18.0,
-        review_minutes_per_run=3.0,
-        exception_minutes=12.0,
-        conservative_hours_saved=6.86,
-        likely_hours_saved=9.80,
-        optimistic_hours_saved=11.76,
-    )
+    return calculate_forecast(**_DEMO_FORECAST_INPUTS)
 
 
 def load_demo_effectiveness() -> EffectivenessMetrics:
     """Return a realistic effectiveness breakdown (~74, status ok)."""
-    return EffectivenessMetrics(
-        realised_time_score=24.0,
-        coverage_score=16.0,
-        reliability_score=15.0,
-        quality_score=12.0,
-        cycle_time_score=5.0,
-        acceptance_score=2.0,
-        safety_status="ok",
-        overall_score=74.0,
-        recommendation="Good performance. Monitor exception rate.",
-    )
+    return calculate_effectiveness(**_DEMO_EFFECTIVENESS_INPUTS)
