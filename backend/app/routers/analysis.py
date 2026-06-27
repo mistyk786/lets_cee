@@ -9,7 +9,7 @@ from app.schemas import (
     ForecastMetrics,
     WorkflowStep,
 )
-from app.services import analysis_service
+from app.services import analysis_service, prototype_service
 
 router = APIRouter()
 
@@ -81,3 +81,9 @@ def forecast(request: ForecastRequest) -> ForecastMetrics:
 @router.get("/api/effectiveness", response_model=EffectivenessMetrics)
 def effectiveness() -> EffectivenessMetrics:
     return analysis_service.effectiveness()
+
+
+@router.get("/api/analysis/current", response_model=DetectedWorkflow | None)
+def current_analysis() -> DetectedWorkflow | None:
+    """Latest workflow from the inbox watcher (live analysis state)."""
+    return prototype_service.get_last_workflow()

@@ -66,12 +66,14 @@ def get_raw_emails(
     active = settings or get_settings()
     if prefer_live and imap_configured(active):
         try:
-            fetched = fetch_recent_emails(settings=active)
-            if fetched:
-                return fetched, "imap"
+            fetched = fetch_recent_emails(
+                settings=active,
+                scheduling_only=False,
+            )
+            return fetched, "imap"
         except Exception:
-            # Fall through to demo on IMAP errors so the prototype still runs.
-            pass
+            # IMAP configured but failed — do not silently substitute demo data.
+            return [], "imap"
 
     raw = [email.model_dump() for email in load_demo_emails()]
     return raw, "demo"

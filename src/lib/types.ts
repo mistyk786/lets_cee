@@ -240,6 +240,9 @@ export type OverviewSummary = {
     emailsPerMeeting: number;
     monthlyCoordinationHours: number;
   };
+  automationAvailable?: boolean;
+  automatableActions?: string[];
+  workflowCategory?: string;
 };
 
 export type DataSource = "demo" | "imap" | "upload" | "unknown";
@@ -260,4 +263,7 @@ export type WatcherStatus = {
   newMessages: number;
   notificationCount: number;
   workflowName: string | null;
+  automationAvailable: boolean | null;
+  automationSummary: string | null;
+  workflowCategory: string | null;
 };

@@ -66,14 +66,20 @@ export function mapOverviewSummary(
 ): OverviewSummary {
   const manualMinutes = averageManualMinutes(workflow.current_steps);
   const runsPerMonth = workflow.occurrence_count;
+  const available = workflow.automation_available !== false;
 
   return {
     workflowName: workflow.workflow_name,
-    status: "Automation Opportunity Detected",
+    status: available
+      ? "Automation opportunity detected"
+      : "No automation available",
     opportunityScore: Math.round(workflow.opportunity_score),
     explanation:
-      workflow.assumptions[0] ??
-      "High repetition, predictable steps, and strong automation potential.",
+      workflow.automation_summary ||
+      workflow.assumptions[0] ||
+      (available
+        ? "High repetition, predictable steps, and strong automation potential."
+        : "Sloth analysed your inbox but did not find a safe workflow to automate."),
     metrics: {
       runsPerMonth,
       manualMinutesPerRun: Math.round(manualMinutes),
@@ -82,6 +88,9 @@ export function mapOverviewSummary(
       monthlyCoordinationHours:
         Math.round(((runsPerMonth * manualMinutes) / 60) * 10) / 10,
     },
+    automationAvailable: available,
+    automatableActions: workflow.automatable_actions ?? [],
+    workflowCategory: workflow.workflow_category ?? "other",
   };
 }
 
@@ -343,6 +352,9 @@ export function mapWatcherStatus(
     newMessages: watcher.new_messages ?? 0,
     notificationCount: watcher.notification_count ?? 0,
     workflowName: watcher.workflow_name ?? null,
+    automationAvailable: watcher.automation_available ?? null,
+    automationSummary: watcher.automation_summary ?? null,
+    workflowCategory: watcher.workflow_category ?? null,
   };
 }
 
@@ -361,6 +373,9 @@ export function mockWatcherStatus(): WatcherStatus {
     newMessages: 0,
     notificationCount: 0,
     workflowName: null,
+    automationAvailable: null,
+    automationSummary: null,
+    workflowCategory: null,
   };
 }
 

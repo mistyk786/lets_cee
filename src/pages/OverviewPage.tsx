@@ -57,6 +57,24 @@ export function OverviewPage() {
 
       {!summary ? (
         <Skeleton className="h-64 w-full" />
+      ) : summary.automationAvailable === false ? (
+        <div className="card p-8 text-center">
+          <Badge tone="warning">No automation available</Badge>
+          <h2 className="mt-4 font-display text-2xl font-medium text-ink-900">
+            {summary.workflowName}
+          </h2>
+          <p className="mx-auto mt-3 max-w-lg text-ink-600">{summary.explanation}</p>
+          <p className="mt-4 text-sm text-ink-500">
+            Sloth read your real inbox. Nothing met the bar for safe automation
+            (repeatable pattern, score ≥ 45, clear actions). Check the bell for
+            details or send yourself a test scheduling email and scan again.
+          </p>
+          <div className="mt-6 flex justify-center gap-3">
+            <Button variant="secondary" onClick={() => navigate("/setup")}>
+              Scan again
+            </Button>
+          </div>
+        </div>
       ) : (
         <>
           {/* Opportunity hero */}
@@ -79,6 +97,14 @@ export function OverviewPage() {
                 <p className="mt-3 text-lg font-medium leading-relaxed text-ink-800">
                   {summary.explanation}
                 </p>
+                {summary.automatableActions &&
+                  summary.automatableActions.length > 0 && (
+                    <ul className="mt-4 space-y-1 text-sm text-ink-600">
+                      {summary.automatableActions.map((action) => (
+                        <li key={action}>• {action}</li>
+                      ))}
+                    </ul>
+                  )}
                 <div className="mt-5 flex flex-wrap gap-3">
                   <Button onClick={() => navigate(`/opportunities/${flagshipId}`)}>
                     Review optimisation

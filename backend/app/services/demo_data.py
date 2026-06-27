@@ -162,6 +162,42 @@ def _build_demo_workflow_shell() -> DetectedWorkflow:
             "Attendee calendars expose free/busy availability.",
         ],
         automation_rules=_demo_automation_rules(),
+        automation_available=True,
+        workflow_category="scheduling",
+        automation_summary=(
+            "Repeated meeting-scheduling from email can be partially automated: "
+            "propose times, draft replies, and hold tentative calendar slots."
+        ),
+        automatable_actions=[
+            "Draft reply with proposed meeting times",
+            "Hold a tentative calendar slot",
+            "Summarise scheduling thread for review",
+        ],
+    )
+
+
+def build_no_automation_workflow(
+    summary: str,
+    *,
+    email_count: int = 0,
+) -> DetectedWorkflow:
+    """Honest empty analysis when live inbox has nothing worth automating."""
+    detail = summary
+    if email_count:
+        detail = f"{summary} (reviewed {email_count} recent messages)."
+    return DetectedWorkflow(
+        workflow_name="No repeatable workflow detected",
+        occurrence_count=0,
+        current_steps=[],
+        bottlenecks=[],
+        opportunity_score=0.0,
+        automation_proposal=[],
+        assumptions=[detail],
+        automation_rules=_demo_automation_rules(),
+        automation_available=False,
+        workflow_category="none",
+        automation_summary=detail,
+        automatable_actions=[],
     )
 
 

@@ -129,12 +129,26 @@ export function OpportunitiesPage() {
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={<Inbox size={22} />}
-          title="No opportunities in this view"
-          description="As SLOTH observes more approved activity, new optimisation opportunities will appear here."
+          title={
+            api.isLive()
+              ? "No automation opportunities yet"
+              : "No opportunities in this view"
+          }
+          description={
+            api.isLive()
+              ? "Sloth analysed your inbox and did not find a repeatable workflow worth automating. Try scanning again after more email activity, or check notifications for details."
+              : "As SLOTH observes more approved activity, new optimisation opportunities will appear here."
+          }
           action={
-            <Button variant="secondary" onClick={() => setFilter("all")}>
-              Show all
-            </Button>
+            api.isLive() ? (
+              <Button variant="secondary" onClick={() => navigate("/setup")}>
+                Scan inbox again
+              </Button>
+            ) : (
+              <Button variant="secondary" onClick={() => setFilter("all")}>
+                Show all
+              </Button>
+            )
           }
         />
       ) : (

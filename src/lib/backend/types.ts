@@ -37,6 +37,10 @@ export type BackendDetectedWorkflow = {
   automation_proposal: BackendWorkflowStep[];
   assumptions: string[];
   automation_rules: BackendAutomationRule;
+  automation_available?: boolean;
+  workflow_category?: string;
+  automation_summary?: string;
+  automatable_actions?: string[];
 };
 
 export type BackendForecastMetrics = {
@@ -130,6 +134,12 @@ export type BackendPrototypeBootstrapResponse = {
   opportunity_score: number;
   notifications: BackendNotificationItem[];
   demo_mode: boolean;
+  data_source?: string;
+  automation_available?: boolean;
+  automation_summary?: string;
+  workflow_category?: string;
+  automatable_actions?: string[];
+  workflow?: BackendDetectedWorkflow;
 };
 
 /** GET /api/watcher/status — background inbox poll state. */
@@ -147,6 +157,9 @@ export type BackendWatcherStatus = {
   new_messages?: number;
   notification_count?: number;
   workflow_name?: string | null;
+  automation_available?: boolean | null;
+  automation_summary?: string | null;
+  workflow_category?: string | null;
 };
 
 /** GET /api/ingest/status — configured data sources. */
