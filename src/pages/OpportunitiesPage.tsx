@@ -54,9 +54,9 @@ export function OpportunitiesPage() {
             Opportunities
           </h1>
         </div>
-        <p className="mt-1 text-ink-500">
-          The home for workflow improvements SLOTH discovers. It gets more
-          valuable as it observes more repeatable work over time.
+        <p className="mt-2 text-ink-500">
+          Workflows SLOTH can automate for you. Pick one to configure how it
+          should run.
         </p>
       </div>
 

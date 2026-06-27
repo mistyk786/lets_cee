@@ -27,10 +27,11 @@ import type {
   NodeKind,
   OptimisationOpportunity,
   OverviewSummary,
+  SafetyIncident,
   WatcherStatus,
   WorkflowStep,
 } from "./types";
-import { effectivenessMetrics as mockEffectiveness } from "./mockData";
+import { workflowIdFromName } from "./workflowSession";
 
 // ---------------------------------------------------------------------------
 // Demo data
@@ -42,15 +43,25 @@ export function mapDemoDataRaw(raw: BackendDemoDataRaw): DemoDataset {
   const calendarIds = new Set(
     events.map((e) => e.calendar_id ?? e.id ?? "default")
   );
+  const source = (raw.data_source ?? "demo") as DataSource;
+  const firstSubject = emails[0]?.subject?.trim();
 
   return {
-    workflowName: "Internal Meeting Scheduling",
+    workflowName:
+      source === "imap"
+        ? firstSubject
+          ? `Inbox: ${firstSubject.slice(0, 48)}${firstSubject.length > 48 ? "…" : ""}`
+          : "Live inbox"
+        : "Internal Meeting Scheduling",
     dataSources: ["email", "calendar"],
+    dataSource: source,
+    ingestError: raw.ingest_error ?? null,
     analysisPeriodDays: raw.analysis_period_days ?? 30,
     summary: {
-      schedulingEmailRequests: emails.length || 45,
+      schedulingEmailRequests: emails.length,
       calendarSources: calendarIds.size || 3,
       activityHistoryDays: raw.analysis_period_days ?? 30,
+      emailThreads: raw.thread_count ?? emails.length,
     },
   };
 }
@@ -67,6 +78,7 @@ export function mapOverviewSummary(
 
   return {
     workflowName: workflow.workflow_name,
+    opportunityId: workflowIdFromName(workflow.workflow_name),
     status: "Automation Opportunity Detected",
     opportunityScore: Math.round(workflow.opportunity_score),
     explanation:
@@ -85,17 +97,21 @@ export function mapOverviewSummary(
 
 export function mapDetectedWorkflowToOpportunity(
   workflow: BackendDetectedWorkflow,
-  id = "internal-meeting-scheduling"
+  id?: string
 ): OptimisationOpportunity {
+  const oppId = id ?? workflowIdFromName(workflow.workflow_name);
   const manualMinutes = averageManualMinutes(workflow.current_steps);
   const rules = mapAutomationRule(workflow.automation_rules);
 
+  const score = Math.round(workflow.opportunity_score);
+  const confidence = Math.min(workflow.opportunity_score / 100, 0.99);
+
   return {
-    id,
+    id: oppId,
     workflowName: workflow.workflow_name,
     description:
       workflow.assumptions.join(" ") ||
-      "Coordinating meetings from email requests through to a confirmed calendar event.",
+      "Repeated coordination pattern detected in your inbox.",
     status: "ready_to_review",
     detectedAt: new Date().toISOString(),
     sourceSystems: ["email", "calendar"],
@@ -106,18 +122,18 @@ export function mapDetectedWorkflowToOpportunity(
     },
     evidence: {
       repeatedRuns: workflow.occurrence_count,
-      averageEmailsPerRun: 4.2,
-      averageCycleTimeHours: 67,
+      averageEmailsPerRun: Math.max(1, Math.round(workflow.occurrence_count / 10) || 1),
+      averageCycleTimeHours: Math.round(manualMinutes * 4),
       manualMinutesPerRun: Math.round(manualMinutes),
-      patternConfidence: Math.min(workflow.opportunity_score / 100, 0.99),
-      examples: workflow.assumptions.slice(0, 3),
+      patternConfidence: confidence,
+      examples: workflow.assumptions.slice(0, 4),
     },
     scores: {
-      opportunityScore: Math.round(workflow.opportunity_score),
-      confidenceScore: Math.round(workflow.opportunity_score * 0.95),
-      repetitionScore: 88,
-      consistencyScore: 82,
-      dataCompletenessScore: 85,
+      opportunityScore: score,
+      confidenceScore: Math.round(score * 0.95),
+      repetitionScore: Math.min(score + 5, 100),
+      consistencyScore: Math.min(score, 100),
+      dataCompletenessScore: Math.min(score + 3, 100),
       riskScore: rules.internalOnly ? 18 : 28,
     },
     riskLevel: rules.internalOnly ? "low" : "medium",
@@ -288,7 +304,18 @@ function defaultForecastFromCounts(metrics: BackendForecastMetrics): Forecast {
 export function mapEffectiveness(
   metrics: BackendEffectivenessMetrics
 ): EffectivenessMetrics {
-  const mock = mockEffectiveness;
+  const emptyDetails: EffectivenessMetrics["details"] = {
+    realisedMinutes: 0,
+    forecastMinutes: 0,
+    coverageRuns: 0,
+    coverageEligible: 0,
+    successfulRuns: 0,
+    totalRuns: 0,
+    correctionsNeeded: 0,
+    cycleTimeBeforeDays: 0,
+    cycleTimeAfterDays: 0,
+    acceptancePercentage: 0,
+  };
 
   return {
     overallScore: Math.round(metrics.overall_score),
@@ -300,8 +327,8 @@ export function mapEffectiveness(
     acceptanceScore: scaleScore(metrics.acceptance_score, 5),
     safetyStatus:
       metrics.safety_status === "ok" ? "healthy" : "needs_review",
-    details: mock.details,
-    safetyIncidents: mock.safetyIncidents,
+    details: emptyDetails,
+    safetyIncidents: [] as SafetyIncident[],
   };
 }
 
@@ -344,10 +371,12 @@ export function mapWatcherStatus(
   };
 }
 
-export function mockWatcherStatus(): WatcherStatus {
+export function offlineWatcherStatus(
+  connectionMode: "mock" | "offline"
+): WatcherStatus {
   return {
-    connectionMode: "mock",
-    dataSource: "demo",
+    connectionMode,
+    dataSource: connectionMode === "mock" ? "demo" : "unknown",
     enabled: false,
     running: false,
     imapConfigured: false,
@@ -355,11 +384,18 @@ export function mockWatcherStatus(): WatcherStatus {
     pollIntervalSeconds: 120,
     lastScanAt: null,
     nextScanAt: null,
-    lastError: null,
+    lastError:
+      connectionMode === "offline"
+        ? "Backend unreachable — start the API server"
+        : null,
     newMessages: 0,
     notificationCount: 0,
     workflowName: null,
   };
+}
+
+export function mockWatcherStatus(): WatcherStatus {
+  return offlineWatcherStatus("mock");
 }
 
 // ---------------------------------------------------------------------------

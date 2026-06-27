@@ -61,15 +61,25 @@ export type BackendEffectivenessMetrics = {
   recommendation: string;
 };
 
-/** GET /api/demo-data — raw Member 3 payload before summarisation. */
+/** GET /api/demo-data — raw or live inbox payload before summarisation. */
 export type BackendDemoDataRaw = {
-  emails?: Array<{ subject?: string; thread_id?: string; body?: string }>;
+  emails?: Array<{
+    subject?: string;
+    thread_id?: string;
+    body?: string;
+    sender?: string;
+    recipient?: string;
+    timestamp?: string;
+  }>;
   calendar_events?: Array<{
     id?: string;
     calendar_id?: string;
     title?: string;
   }>;
   analysis_period_days?: number;
+  data_source?: "demo" | "imap" | "upload";
+  thread_count?: number;
+  ingest_error?: string | null;
 };
 
 export type BackendTentativeEvent = {

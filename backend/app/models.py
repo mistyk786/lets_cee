@@ -33,10 +33,13 @@ class CalendarEvent(BaseModel):
 
 
 class DemoDataResponse(BaseModel):
-    """Combined raw demo dataset: scheduling emails and calendar events."""
+    """Combined dataset surfaced by ``GET /api/demo-data``."""
 
     emails: list[EmailMessage]
     calendar_events: list[CalendarEvent]
+    data_source: str = "demo"
+    thread_count: int = 0
+    ingest_error: str | None = None
 
 
 class TimeSlot(BaseModel):

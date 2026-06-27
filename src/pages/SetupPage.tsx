@@ -28,11 +28,34 @@ export function SetupPage() {
   const navigate = useNavigate();
   const { loadDemo, watcherStatus } = useApp();
   const [dataset, setDataset] = useState<DemoDataset | null>(null);
+  const [loadingInbox, setLoadingInbox] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [analysing, setAnalysing] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
 
+  async function loadInbox() {
+    setLoadingInbox(true);
+    setLoadError(null);
+    try {
+      const data = await api.getDemoData();
+      setDataset(data);
+      if (data.ingestError) {
+        setLoadError(data.ingestError);
+      }
+    } catch (err) {
+      setDataset(null);
+      setLoadError(
+        err instanceof Error
+          ? err.message
+          : "Could not load inbox summary. Is the backend running?"
+      );
+    } finally {
+      setLoadingInbox(false);
+    }
+  }
+
   useEffect(() => {
-    api.getDemoData().then(setDataset);
+    void loadInbox();
   }, []);
 
   useEffect(() => {
@@ -46,9 +69,18 @@ export function SetupPage() {
   async function handleAnalyse() {
     setAnalysing(true);
     setStepIndex(0);
-    await api.analyseWorkflow();
-    loadDemo();
-    navigate("/overview");
+    try {
+      await api.analyseWorkflow();
+      loadDemo();
+      navigate(`/opportunities/${api.getPrimaryOpportunityId()}`);
+    } catch (err) {
+      setAnalysing(false);
+      alert(
+        err instanceof Error
+          ? err.message
+          : "Could not analyse your inbox. Check backend logs."
+      );
+    }
   }
 
   return (
@@ -73,26 +105,46 @@ export function SetupPage() {
             >
               <div className="text-center">
                 <p className="mb-3 font-mono text-[11px] uppercase tracking-label text-moss-600">
-                  Demo dataset
+                  {dataset?.dataSource === "imap"
+                    ? "Live inbox"
+                    : api.isLive()
+                      ? "Connected"
+                      : "Offline demo"}
                 </p>
                 <h1 className="font-display text-3xl font-medium tracking-tighter text-ink-900">
-                  Analyse a workflow with the demo dataset
+                  Find automation opportunities
                 </h1>
                 <p className="mt-2 text-ink-500">
-                  We'll analyse a realistic, anonymised set of scheduling
-                  activity. No real accounts are connected.
+                  SLOTH analyses your email and calendar activity, then surfaces
+                  workflows you can automate safely.
                 </p>
               </div>
 
               <div className="mt-8 space-y-4">
                 <WatcherStatusPanel status={watcherStatus} compact />
 
+                {loadError && (
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                    <p className="font-medium">Could not read your inbox</p>
+                    <p className="mt-1 text-amber-800">{loadError}</p>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="mt-3"
+                      onClick={() => void loadInbox()}
+                    >
+                      Retry inbox load
+                    </Button>
+                  </div>
+                )}
+
                 <div className="card p-5">
                   <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
                     Workflow selected
                   </p>
                   <p className="mt-1 text-lg font-semibold text-ink-900">
-                    {dataset?.workflowName ?? "Internal Meeting Scheduling"}
+                    {dataset?.workflowName ??
+                      (api.isLive() ? "Live inbox" : "Demo workflow")}
                   </p>
                 </div>
 
@@ -124,28 +176,38 @@ export function SetupPage() {
 
                 <div className="card p-5">
                   <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
-                    Mock data summary
+                    {dataset?.dataSource === "imap"
+                      ? "Inbox summary"
+                      : "Data summary"}
                   </p>
                   <div className="mt-3 grid grid-cols-3 gap-3 text-center">
                     <div>
                       <p className="font-display text-3xl font-medium tracking-tighter tnum text-ink-900">
-                        {dataset?.summary.schedulingEmailRequests ?? 45}
+                        {loadingInbox
+                          ? "…"
+                          : (dataset?.summary.schedulingEmailRequests ?? 0)}
                       </p>
                       <p className="text-xs text-ink-500">
-                        scheduling requests
+                        {dataset?.dataSource === "imap"
+                          ? "inbox emails"
+                          : "scheduling emails"}
                       </p>
                     </div>
                     <div>
                       <p className="font-display text-3xl font-medium tracking-tighter tnum text-ink-900">
-                        {dataset?.summary.calendarSources ?? 3}
+                        {loadingInbox
+                          ? "…"
+                          : (dataset?.summary.emailThreads ?? 0)}
+                      </p>
+                      <p className="text-xs text-ink-500">threads</p>
+                    </div>
+                    <div>
+                      <p className="font-display text-3xl font-medium tracking-tighter tnum text-ink-900">
+                        {loadingInbox
+                          ? "…"
+                          : (dataset?.summary.calendarSources ?? 0)}
                       </p>
                       <p className="text-xs text-ink-500">calendar sources</p>
-                    </div>
-                    <div>
-                      <p className="font-display text-3xl font-medium tracking-tighter tnum text-ink-900">
-                        {dataset?.summary.activityHistoryDays ?? 30}
-                      </p>
-                      <p className="text-xs text-ink-500">days of history</p>
                     </div>
                   </div>
                 </div>
@@ -162,8 +224,12 @@ export function SetupPage() {
               </div>
 
               <div className="mt-8 flex justify-center">
-                <Button size="lg" onClick={handleAnalyse}>
-                  Analyse Workflow
+                <Button
+                  size="lg"
+                  onClick={handleAnalyse}
+                  disabled={loadingInbox}
+                >
+                  Scan for opportunities
                   <ArrowRight size={18} />
                 </Button>
               </div>

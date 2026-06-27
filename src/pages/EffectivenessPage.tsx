@@ -33,6 +33,7 @@ const BAND_TONE = {
 export function EffectivenessPage() {
   const { id } = useParams();
   const [metrics, setMetrics] = useState<EffectivenessMetrics | null>(null);
+  const workflowName = api.getLastAnalysis()?.workflow_name;
 
   useEffect(() => {
     api.getEffectiveness(id).then(setMetrics);
@@ -58,8 +59,9 @@ export function EffectivenessPage() {
             </h1>
           </div>
           <p className="mt-1 text-ink-500">
-            Internal Meeting Scheduling Assistant · effectiveness after
-            activation
+            {workflowName
+              ? `${workflowName} Assistant · effectiveness after activation`
+              : "Effectiveness after activation"}
           </p>
         </div>
         <StepProgress current="measure" />
@@ -88,7 +90,11 @@ export function EffectivenessPage() {
               <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <Highlight
                   label="Time realised"
-                  value={`${Math.round((d.realisedMinutes / d.forecastMinutes) * 100)}%`}
+                  value={
+                    d.forecastMinutes > 0
+                      ? `${Math.round((d.realisedMinutes / d.forecastMinutes) * 100)}%`
+                      : "—"
+                  }
                 />
                 <Highlight
                   label="Successful runs"

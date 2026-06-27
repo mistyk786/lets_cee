@@ -6,8 +6,8 @@ import { Logo } from "@/components/ui/Logo";
 import { cn } from "@/lib/utils";
 
 const MOBILE_NAV = [
-  { to: "/overview", label: "Overview" },
   { to: "/opportunities", label: "Opportunities" },
+  { to: "/overview", label: "Discover" },
   { to: "/automations", label: "Automations" },
   { to: "/insights", label: "Insights" },
 ];

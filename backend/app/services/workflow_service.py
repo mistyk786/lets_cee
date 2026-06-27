@@ -15,6 +15,7 @@ from app.constants import DEFAULT_OPENAI_MAX_TOKENS, DEFAULT_OPENAI_MODEL
 from app.schemas import DetectedWorkflow
 from app.services.automation_service import generate_automation_proposal
 from app.services.demo_data import load_demo_workflow
+from app.services.heuristic_workflow_service import extract_workflow_heuristic
 
 logger = logging.getLogger(__name__)
 
@@ -129,10 +130,21 @@ def extract_workflow_with_meta(
 
         workflow = DetectedWorkflow.model_validate(json.loads(content.strip()))
         return _apply_rule_based_proposal(workflow), False
-    except Exception as exc:  # noqa: BLE001 - any failure -> safe fallback
-        logger.warning(
-            "extract_workflow falling back to demo data: %s", exc
-        )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("extract_workflow LLM failed: %s", exc)
+        if email_threads:
+            try:
+                workflow = extract_workflow_heuristic(email_threads)
+                logger.info(
+                    "extract_workflow using heuristic fallback for %d threads",
+                    len(email_threads),
+                )
+                return workflow, False
+            except Exception as heuristic_exc:  # noqa: BLE001
+                logger.warning(
+                    "extract_workflow heuristic failed: %s", heuristic_exc
+                )
+        logger.warning("extract_workflow falling back to demo data")
         return load_demo_workflow(), True
 
 

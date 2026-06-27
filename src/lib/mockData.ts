@@ -23,15 +23,18 @@ export const demoDataset: DemoDataset = {
   workflowName: "Internal Meeting Scheduling",
   dataSources: ["email", "calendar"],
   analysisPeriodDays: 30,
+  dataSource: "demo",
   summary: {
     schedulingEmailRequests: 45,
     calendarSources: 3,
     activityHistoryDays: 30,
+    emailThreads: 15,
   },
 };
 
 export const overviewSummary: OverviewSummary = {
   workflowName: "Internal Meeting Scheduling",
+  opportunityId: "internal-meeting-scheduling",
   status: "Automation Opportunity Detected",
   opportunityScore: 87,
   explanation:

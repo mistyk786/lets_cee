@@ -11,8 +11,8 @@ import { Logo } from "@/components/ui/Logo";
 import { cn } from "@/lib/utils";
 
 const NAV = [
-  { to: "/overview", label: "Overview", icon: LayoutDashboard },
   { to: "/opportunities", label: "Opportunities", icon: Inbox },
+  { to: "/overview", label: "Discover", icon: LayoutDashboard },
   { to: "/automations", label: "Active Automations", icon: Zap },
   { to: "/insights", label: "Insights", icon: BarChart3 },
 ];

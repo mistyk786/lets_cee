@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import activation, analysis, demo
+from app.routers import activation, analysis, demo, opportunities, status
 
 app = FastAPI()
 
@@ -10,6 +10,8 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -19,6 +21,8 @@ app.add_middleware(
 app.include_router(demo.router)
 app.include_router(analysis.router)
 app.include_router(activation.router)
+app.include_router(opportunities.router)
+app.include_router(status.router)
 
 
 @app.get("/health")

@@ -190,10 +190,13 @@ export type DemoDataset = {
   workflowName: string;
   dataSources: ("email" | "calendar")[];
   analysisPeriodDays: number;
+  dataSource: DataSource;
+  ingestError?: string | null;
   summary: {
     schedulingEmailRequests: number;
     calendarSources: number;
     activityHistoryDays: number;
+    emailThreads: number;
   };
 };
 
@@ -227,6 +230,7 @@ export type ActivateAutomationResult = {
 
 export type OverviewSummary = {
   workflowName: string;
+  opportunityId: string;
   status: string;
   opportunityScore: number;
   explanation: string;

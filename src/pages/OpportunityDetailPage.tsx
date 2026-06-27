@@ -3,12 +3,9 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   Search,
-  Coins,
-  Gauge,
   GitBranch,
   Sparkles,
   SlidersHorizontal,
-  LineChart,
   Zap,
   ShieldCheck,
   CheckCircle2,
@@ -28,12 +25,8 @@ import { StepProgress, type ProcessStep } from "@/components/layout/StepProgress
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { ScoreRing } from "@/components/ui/Progress";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { MetricCard } from "@/components/metrics/MetricCard";
-import { ScoreBreakdown } from "@/components/metrics/ScoreBreakdown";
-import { ForecastPanel } from "@/components/metrics/ForecastPanel";
 import { DetectionEvidence } from "@/components/opportunities/DetectionEvidence";
 import {
   WorkflowDiagram,
@@ -50,13 +43,10 @@ import {
 } from "@/lib/utils";
 
 const SECTIONS = [
-  { id: "evidence", label: "Why detected", icon: Search },
-  { id: "cost", label: "Current cost", icon: Coins },
-  { id: "readiness", label: "Readiness", icon: Gauge },
-  { id: "current", label: "Current workflow", icon: GitBranch },
-  { id: "proposed", label: "Proposed automation", icon: Sparkles },
-  { id: "rules", label: "Edit rules", icon: SlidersHorizontal },
-  { id: "forecast", label: "Forecast", icon: LineChart },
+  { id: "evidence", label: "Why this", icon: Search },
+  { id: "current", label: "Today", icon: GitBranch },
+  { id: "proposed", label: "Automate", icon: Sparkles },
+  { id: "rules", label: "Your rules", icon: SlidersHorizontal },
 ];
 
 export function OpportunityDetailPage() {
@@ -148,10 +138,6 @@ export function OpportunityDetailPage() {
 
   const status = statusMeta(opp.status);
   const risk = riskMeta(opp.riskLevel);
-  const totalManualTime =
-    opp.frequency.unit === "month"
-      ? `${Math.round((opp.frequency.value * opp.evidence.manualMinutesPerRun) / 6) / 10} hrs/month`
-      : `${opp.frequency.value * opp.evidence.manualMinutesPerRun} min/${opp.frequency.unit}`;
   const currentStep: ProcessStep = activated ? "measure" : "design";
 
   const hasDiagram = opp.currentWorkflow.length > 0;
@@ -209,137 +195,42 @@ export function OpportunityDetailPage() {
         </div>
       </div>
 
-      {/* Section A: Why SLOTH detected this */}
+      {/* Section: Why SLOTH detected this */}
       <section id="evidence" className="scroll-mt-28">
         <Card>
           <CardHeader
-            title="Why SLOTH detected this"
-            description="The evidence behind this opportunity."
+            title="Why automate this?"
+            description="What SLOTH observed in your activity."
             icon={<Search size={18} />}
           />
           <CardBody className="space-y-4">
             <DetectionEvidence opportunity={opp} />
+            {opp.evidence.examples.length > 0 && (
+              <ul className="space-y-2">
+                {opp.evidence.examples.map((ex) => (
+                  <li
+                    key={ex}
+                    className="rounded-xl border border-ink-100 bg-ink-50/50 px-3 py-2 text-sm text-ink-700"
+                  >
+                    {ex}
+                  </li>
+                ))}
+              </ul>
+            )}
             <div className="flex items-start gap-3 rounded-xl bg-moss-50 p-4">
               <Sparkles size={16} className="mt-0.5 shrink-0 text-moss-600" />
               <p className="text-sm leading-relaxed text-ink-700">
-                “I found the same sequence repeated across{" "}
-                {opp.evidence.repeatedRuns} conversations: a scheduling change,
-                a manual calendar check, several replies, and an updated event.”
+                This pattern repeated{" "}
+                <strong>{opp.evidence.repeatedRuns} times</strong> with
+                predictable steps — a good candidate for human-approved
+                automation.
               </p>
             </div>
           </CardBody>
         </Card>
       </section>
 
-      {/* Section B: Current cost */}
-      <section id="cost" className="scroll-mt-28">
-        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-ink-400">
-          <Coins size={15} /> Current cost of the workflow
-        </h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <MetricCard
-            label="Frequency"
-            value={opp.frequency.value}
-            unit={`/${opp.frequency.unit}`}
-            trend={opp.frequency.trendPercentage}
-          />
-          <MetricCard
-            label="Manual minutes per run"
-            value={opp.evidence.manualMinutesPerRun}
-            unit="min"
-          />
-          <MetricCard
-            label="Est. total time"
-            value={totalManualTime.split(" ")[0]}
-            unit={totalManualTime.split(" ")[1]}
-            hint="Frequency multiplied by manual minutes per run."
-          />
-          <MetricCard
-            label="Avg emails per run"
-            value={opp.evidence.averageEmailsPerRun}
-          />
-          <MetricCard
-            label="Avg cycle time"
-            value={
-              opp.evidence.averageCycleTimeHours >= 24
-                ? (opp.evidence.averageCycleTimeHours / 24).toFixed(1)
-                : opp.evidence.averageCycleTimeHours
-            }
-            unit={opp.evidence.averageCycleTimeHours >= 24 ? "days" : "hrs"}
-          />
-          <MetricCard
-            label="Manual touchpoints"
-            value={opp.currentWorkflow.filter((s) => s.actor === "user").length || 5}
-            hint="Distinct hands-on steps you perform each run."
-          />
-        </div>
-      </section>
-
-      {/* Section C: Automation readiness */}
-      <section id="readiness" className="scroll-mt-28">
-        <Card>
-          <CardHeader
-            title="Automation readiness"
-            description="How strong and safe an automation candidate this is."
-            icon={<Gauge size={18} />}
-          />
-          <CardBody>
-            <div className="grid gap-6 lg:grid-cols-[auto,1fr]">
-              <div className="flex flex-col items-center gap-3 rounded-2xl bg-ink-50/70 px-8 py-6">
-                <ScoreRing score={opp.scores.opportunityScore} label="score" />
-                <p className="text-center text-xs font-medium text-ink-500">
-                  Opportunity score
-                </p>
-                <div className="flex flex-col items-center gap-1.5 text-sm">
-                  <span className="text-ink-500">
-                    Confidence{" "}
-                    <strong className="text-ink-800">
-                      {opp.scores.confidenceScore}%
-                    </strong>
-                  </span>
-                  <Badge tone={risk.tone}>Risk: {risk.label}</Badge>
-                </div>
-              </div>
-              <div className="space-y-5">
-                <ScoreBreakdown
-                  rows={[
-                    {
-                      label: "Repetition",
-                      value: opp.scores.repetitionScore,
-                      hint: "How consistently this pattern repeats.",
-                    },
-                    {
-                      label: "Consistency",
-                      value: opp.scores.consistencyScore,
-                      hint: "How similar each run is to the others.",
-                    },
-                    {
-                      label: "Data completeness",
-                      value: opp.scores.dataCompletenessScore,
-                      hint: "How much signal SLOTH has to work from.",
-                    },
-                    {
-                      label: "Safety (inverse risk)",
-                      value: 100 - opp.scores.riskScore,
-                      hint: "Higher means lower risk of unsafe actions.",
-                      tone: "moss",
-                    },
-                  ]}
-                />
-                <div className="flex items-center gap-3 rounded-xl border border-moss-200 bg-moss-50 p-3.5">
-                  <ShieldCheck size={18} className="shrink-0 text-moss-600" />
-                  <p className="text-sm text-ink-700">
-                    Recommended mode:{" "}
-                    <strong>{APPROVAL_MODE_LABELS[opp.recommendedMode]}</strong>
-                  </p>
-                </div>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-      </section>
-
-      {/* Section D: Current workflow diagram */}
+      {/* Current workflow */}
       <section id="current" className="scroll-mt-28">
         <Card>
           <CardHeader
@@ -364,11 +255,9 @@ export function OpportunityDetailPage() {
                   </div>
                   <div className="rounded-xl border border-calendar/30 bg-calendar/5 p-4">
                     <p className="text-sm leading-relaxed text-ink-700">
-                      This workflow occurred{" "}
-                      <strong>{opp.evidence.repeatedRuns} times</strong> this{" "}
-                      {opp.frequency.unit === "week" ? "week" : "month"} and
-                      required around{" "}
-                      <strong>{totalManualTime}</strong> of manual coordination.
+                      {opp.bottlenecks.length} friction point
+                      {opp.bottlenecks.length === 1 ? "" : "s"} identified —
+                      the proposed automation targets these directly.
                     </p>
                   </div>
                 </div>
@@ -422,13 +311,13 @@ export function OpportunityDetailPage() {
         </Card>
       </section>
 
-      {/* Screen 7: Editable rules */}
+      {/* Editable rules */}
       <section id="rules" className="scroll-mt-28">
         <div className="grid gap-6 lg:grid-cols-[1.3fr,1fr]">
           <Card>
             <CardHeader
-              title="Automation rules"
-              description="Tune the safety rules. The generated rule updates live."
+              title="How should SLOTH automate this?"
+              description="Choose approval mode, working hours, and safety constraints."
               icon={<SlidersHorizontal size={18} />}
             />
             <CardBody>
@@ -449,20 +338,6 @@ export function OpportunityDetailPage() {
         </div>
       </section>
 
-      {/* Screen 8: Forecast */}
-      <section id="forecast" className="scroll-mt-28">
-        <Card>
-          <CardHeader
-            title="Expected impact"
-            description="Forecast time saved under your current rules."
-            icon={<LineChart size={18} />}
-          />
-          <CardBody>
-            <ForecastPanel forecast={forecast} />
-          </CardBody>
-        </Card>
-      </section>
-
       {/* Activation CTA */}
       {!activated && (
         <div className="sticky bottom-4 z-20">
@@ -470,11 +345,12 @@ export function OpportunityDetailPage() {
             <div className="flex items-center gap-3">
               <ShieldCheck size={20} className="text-moss-600" />
               <p className="text-sm text-ink-600">
-                Activate in approval mode —{" "}
                 <strong className="text-ink-900">
-                  likely {forecast.likelyHours} hrs/month saved
+                  {APPROVAL_MODE_LABELS[rules.approvalMode]}
                 </strong>
-                . Nothing sends without you.
+                {" · "}
+                ~{forecast.likelyHours} hrs/month estimated savings. Nothing
+                sends without you.
               </p>
             </div>
             <Button onClick={() => setModalOpen(true)} size="lg">
