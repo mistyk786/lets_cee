@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
+import { SectionLabel } from "@/components/ui/SectionLabel";
+import { StatLedger } from "@/components/ui/StatLedger";
 import { ValueCard } from "@/components/landing/ValueCard";
 import { WorkflowPreview } from "@/components/landing/WorkflowPreview";
 
@@ -20,7 +22,7 @@ const fadeUp = {
   show: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: { delay: i * 0.08, duration: 0.5, ease: "easeOut" },
+    transition: { delay: i * 0.07, duration: 0.5, ease: "easeOut" },
   }),
 };
 
@@ -34,44 +36,52 @@ export function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-moss-50/60 via-white to-white">
+    <div className="min-h-screen">
       {/* Top bar */}
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-        <Logo />
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={scrollToHow}>
-            How it works
-          </Button>
-          <Button size="sm" onClick={() => navigate("/setup")}>
-            Use Demo Dataset
-          </Button>
+      <header className="sticky top-0 z-30 border-b border-ink-200/50 bg-[#f6f5f0]/75 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-3">
+            <Logo />
+            <span className="hidden border-l border-ink-200 pl-3 font-mono text-[11px] uppercase tracking-label text-ink-400 sm:inline">
+              Workflow intelligence
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={scrollToHow}>
+              How it works
+            </Button>
+            <Button size="sm" onClick={() => navigate("/setup")}>
+              Use Demo Dataset
+            </Button>
+          </div>
         </div>
       </header>
 
       {/* Hero */}
-      <section className="mx-auto max-w-6xl px-6 pb-10 pt-10 sm:pt-16">
-        <div className="grid items-center gap-12 lg:grid-cols-2">
+      <section className="relative mx-auto max-w-6xl px-6 pb-16 pt-12 sm:pt-20">
+        {/* localized soft glow, paper + dots show through from the body */}
+        <div className="pointer-events-none absolute -left-24 -top-24 -z-10 h-72 w-72 rounded-full bg-moss-300/20 blur-3xl" />
+
+        <div className="grid items-start gap-12 lg:grid-cols-[1.15fr_0.85fr]">
+          {/* Left column — editorial headline */}
           <div>
-            <motion.span
-              custom={0}
-              variants={fadeUp}
-              initial="hidden"
-              animate="show"
-              className="inline-flex items-center gap-2 rounded-full border border-moss-200 bg-moss-50 px-3 py-1 text-xs font-medium text-moss-700"
-            >
-              <Sparkles size={13} />
-              AI workflow optimisation assistant
-            </motion.span>
+            <motion.div custom={0} variants={fadeUp} initial="hidden" animate="show">
+              <SectionLabel index="00" tone="moss">
+                AI workflow assistant
+              </SectionLabel>
+            </motion.div>
 
             <motion.h1
               custom={1}
               variants={fadeUp}
               initial="hidden"
               animate="show"
-              className="mt-5 text-4xl font-extrabold leading-tight tracking-tight text-ink-900 sm:text-5xl"
+              className="mt-6 font-display text-[2.75rem] font-medium leading-[1.02] tracking-tighter text-ink-900 sm:text-6xl"
             >
               Turn repetitive work into{" "}
-              <span className="text-moss-600">safe, measurable</span>{" "}
+              <em className="font-normal italic text-moss-600">
+                safe, measurable
+              </em>{" "}
               automations.
             </motion.h1>
 
@@ -80,7 +90,7 @@ export function LandingPage() {
               variants={fadeUp}
               initial="hidden"
               animate="show"
-              className="mt-5 max-w-xl text-lg leading-relaxed text-ink-600"
+              className="mt-6 max-w-xl text-balance text-lg leading-relaxed text-ink-600"
             >
               SLOTH detects repeated email and calendar workflows, helps you
               design safer automations, and measures whether they create real
@@ -103,74 +113,107 @@ export function LandingPage() {
               </Button>
             </motion.div>
 
+            {/* Instrument-style stat ledger */}
             <motion.div
               custom={4}
               variants={fadeUp}
               initial="hidden"
               animate="show"
-              className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink-500"
+              className="mt-10 border-t border-ink-200/70 pt-6"
+            >
+              <StatLedger
+                stats={[
+                  { value: "45", label: "runs / month" },
+                  { value: "9 hrs", label: "lost monthly" },
+                  { value: "87", label: "opportunity" },
+                  { value: "91%", label: "confidence" },
+                ]}
+              />
+            </motion.div>
+
+            <motion.div
+              custom={5}
+              variants={fadeUp}
+              initial="hidden"
+              animate="show"
+              className="mt-6 flex flex-wrap gap-x-5 gap-y-2 font-mono text-[11px] uppercase tracking-wide text-ink-400"
             >
               <span className="inline-flex items-center gap-1.5">
-                <Lock size={14} className="text-moss-600" /> Selected work data
-                only
+                <Lock size={13} className="text-moss-600" /> Selected data only
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <UserCheck size={14} className="text-moss-600" /> Human approval
-                built in
+                <UserCheck size={13} className="text-moss-600" /> Human approval
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <MailX size={14} className="text-moss-600" /> No automatic
-                sending by default
+                <MailX size={13} className="text-moss-600" /> No auto-send
               </span>
             </motion.div>
           </div>
 
-          {/* Assistant preview card */}
+          {/* Right column — assistant "transcript" artifact */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ delay: 0.25, duration: 0.6, ease: "easeOut" }}
-            className="relative"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.6, ease: "easeOut" }}
+            className="lg:mt-10"
           >
-            <div className="absolute -inset-4 -z-10 rounded-[2rem] bg-gradient-to-br from-moss-200/40 to-calendar/10 blur-2xl" />
-            <div className="rounded-3xl border border-ink-200/70 bg-white p-6 shadow-lift">
-              <div className="flex items-center gap-3 border-b border-ink-100 pb-4">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-moss-600 text-white">
-                  <Sparkles size={16} />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-ink-900">
+            <div className="card highlight-top overflow-hidden">
+              {/* mono meta header — reads like a real artifact */}
+              <div className="flex items-center justify-between border-b border-ink-200/70 bg-ink-50/40 px-5 py-3">
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-2 w-2 animate-ping rounded-full bg-moss-400 opacity-60" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-moss-500" />
+                  </span>
+                  <span className="font-mono text-[11px] uppercase tracking-label text-ink-500">
                     SLOTH Assistant
+                  </span>
+                </div>
+                <span className="font-mono text-[11px] tracking-wide text-ink-400">
+                  09:41
+                </span>
+              </div>
+
+              <div className="p-5">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-moss-600 text-white">
+                    <Sparkles size={15} />
+                  </div>
+                  <p className="text-[15px] leading-relaxed text-ink-700">
+                    “I found <strong className="font-semibold">3 workflows</strong>{" "}
+                    that may be worth optimising. The strongest is internal
+                    meeting scheduling — you're spending around{" "}
+                    <strong className="font-semibold">9 hours a month</strong>{" "}
+                    coordinating manually.”
                   </p>
-                  <p className="text-xs text-moss-600">Online</p>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2 pl-11">
+                  <span className="rounded-lg bg-moss-50 px-2.5 py-1 text-xs font-medium text-moss-700 ring-1 ring-inset ring-moss-200/60">
+                    Review opportunity
+                  </span>
+                  <span className="rounded-lg bg-ink-100 px-2.5 py-1 text-xs font-medium text-ink-600">
+                    Show evidence
+                  </span>
+                  <span className="rounded-lg bg-ink-100 px-2.5 py-1 text-xs font-medium text-ink-600">
+                    How would this work?
+                  </span>
                 </div>
               </div>
-              <p className="mt-4 text-[15px] leading-relaxed text-ink-700">
-                “I found <strong>3 workflows</strong> that may be worth
-                optimising. The strongest is internal meeting scheduling —
-                you're spending around{" "}
-                <strong>9 hours a month</strong> coordinating manually.”
-              </p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <span className="rounded-lg bg-moss-50 px-2.5 py-1 text-xs font-medium text-moss-700">
-                  Review opportunity
-                </span>
-                <span className="rounded-lg bg-ink-100 px-2.5 py-1 text-xs font-medium text-ink-600">
-                  Show evidence
-                </span>
-                <span className="rounded-lg bg-ink-100 px-2.5 py-1 text-xs font-medium text-ink-600">
-                  How would this work?
-                </span>
-              </div>
-              <div className="mt-5 grid grid-cols-3 gap-3 border-t border-ink-100 pt-4 text-center">
+
+              <div className="grid grid-cols-3 divide-x divide-ink-200/70 border-t border-ink-200/70">
                 {[
                   { v: "87", l: "Opportunity" },
                   { v: "9h", l: "Per month" },
                   { v: "Low", l: "Risk" },
                 ].map((s) => (
-                  <div key={s.l}>
-                    <p className="text-xl font-bold text-ink-900">{s.v}</p>
-                    <p className="text-xs text-ink-400">{s.l}</p>
+                  <div key={s.l} className="px-4 py-4 text-center">
+                    <p className="font-display text-2xl font-medium tracking-tighter tnum text-ink-900">
+                      {s.v}
+                    </p>
+                    <p className="mt-1 font-mono text-[10px] uppercase tracking-label text-ink-400">
+                      {s.l}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -179,25 +222,25 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* How it works / workflow illustration */}
+      {/* How it works */}
       <section
         id="how-it-works"
         className="mx-auto max-w-6xl scroll-mt-8 px-6 py-14"
       >
-        <div className="rounded-3xl border border-ink-200/70 bg-white px-6 py-10 shadow-soft sm:px-10">
-          <div className="text-center">
-            <p className="text-sm font-semibold uppercase tracking-wide text-moss-600">
+        <div className="card bg-dots relative overflow-hidden px-6 py-10 sm:px-10">
+          <div className="max-w-lg">
+            <SectionLabel index="01" tone="moss">
               How SLOTH works
-            </p>
-            <h2 className="mt-2 text-2xl font-bold text-ink-900">
+            </SectionLabel>
+            <h2 className="mt-4 font-display text-3xl font-medium tracking-tighter text-ink-900">
               A calm loop from insight to impact
             </h2>
-            <p className="mx-auto mt-2 max-w-lg text-sm text-ink-500">
-              SLOTH guides every workflow through the same four steps — and you
-              stay in control at each one.
+            <p className="mt-3 text-ink-500">
+              Every workflow moves through the same four steps — and you stay in
+              control at each one.
             </p>
           </div>
-          <div className="mt-9">
+          <div className="mt-10">
             <WorkflowPreview />
           </div>
         </div>
@@ -205,20 +248,26 @@ export function LandingPage() {
 
       {/* Value cards */}
       <section className="mx-auto max-w-6xl px-6 pb-8">
+        <SectionLabel index="02" className="mb-6">
+          What SLOTH does
+        </SectionLabel>
         <div className="grid gap-5 md:grid-cols-3">
           <ValueCard
+            index="01"
             icon={Search}
             accent="#6d5bd0"
             title="Detect repetitive work"
             description="SLOTH learns from approved email and calendar activity to surface multi-step work you repeat often."
           />
           <ValueCard
+            index="02"
             icon={ShieldCheck}
             accent="#3d8c62"
             title="Design safe automations"
             description="Map the current workflow, draft a future one, and edit safety rules so a human stays in control."
           />
           <ValueCard
+            index="03"
             icon={LineChart}
             accent="#b9863f"
             title="Prove measurable impact"
@@ -227,34 +276,49 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Trust band + CTA */}
+      {/* CTA specimen band */}
       <section className="mx-auto max-w-6xl px-6 py-14">
-        <div className="overflow-hidden rounded-3xl bg-moss-700 px-8 py-12 text-center text-white">
-          <h2 className="text-2xl font-bold sm:text-3xl">
-            See where your week is really going.
-          </h2>
-          <p className="mx-auto mt-3 max-w-xl text-moss-100">
-            Load the demo dataset and walk through the full detect → design →
-            optimise → measure journey. No accounts, no connections — just the
-            experience.
-          </p>
-          <div className="mt-7 flex justify-center">
-            <Button
-              size="lg"
-              variant="secondary"
-              onClick={() => navigate("/setup")}
-            >
-              Use Demo Dataset
-              <ArrowRight size={18} />
-            </Button>
+        <div className="relative overflow-hidden rounded-3xl bg-moss-700 px-8 py-14 text-white sm:px-12">
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.12]"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle at center, rgba(255,255,255,0.9) 0.7px, transparent 0.8px)",
+              backgroundSize: "22px 22px",
+            }}
+          />
+          <div className="relative max-w-2xl">
+            <span className="font-mono text-[11px] uppercase tracking-label text-moss-200">
+              Start the demo
+            </span>
+            <h2 className="mt-4 font-display text-3xl font-medium tracking-tighter sm:text-4xl">
+              See where your week is really going.
+            </h2>
+            <p className="mt-3 max-w-xl text-moss-100">
+              Load the demo dataset and walk through the full detect → design →
+              optimise → measure journey. No accounts, no connections — just the
+              experience.
+            </p>
+            <div className="mt-8">
+              <Button
+                size="lg"
+                variant="secondary"
+                onClick={() => navigate("/setup")}
+              >
+                Use Demo Dataset
+                <ArrowRight size={18} />
+              </Button>
+            </div>
           </div>
         </div>
       </section>
 
-      <footer className="border-t border-ink-100 py-8">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 text-sm text-ink-400 sm:flex-row">
+      <footer className="border-t border-ink-200/60 py-8">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 sm:flex-row">
           <Logo size={24} />
-          <p>Turn repetitive work into safe, measurable automations.</p>
+          <p className="font-mono text-[11px] uppercase tracking-wide text-ink-400">
+            Turn repetitive work into safe, measurable automations.
+          </p>
         </div>
       </footer>
     </div>

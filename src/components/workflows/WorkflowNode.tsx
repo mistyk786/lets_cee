@@ -86,53 +86,65 @@ export function WorkflowNode({
   const Icon = meta.icon;
   const friction = step.frictionLevel ?? "low";
   const showFriction = variant === "current" && friction !== "low";
+  const stepNum = String(index + 1).padStart(2, "0");
 
   return (
     <div
       className={cn(
-        "relative w-full rounded-xl border bg-white p-3.5 shadow-soft transition-shadow hover:shadow-lift",
+        "card group relative w-full overflow-hidden p-4 transition-all duration-200 ease-smooth hover:-translate-y-0.5 hover:shadow-lift",
         meta.border,
-        showFriction && "ring-1 ring-red-200"
+        showFriction && "ring-1 ring-red-200/80"
       )}
     >
-      <div className="flex items-start gap-3">
-        <div
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white"
-          style={{ backgroundColor: meta.color }}
-        >
-          <Icon size={16} />
+      {/* Left accent rail */}
+      <span
+        className="absolute bottom-3 left-0 top-3 w-0.5 rounded-full"
+        style={{ backgroundColor: meta.color }}
+      />
+
+      <div className="flex items-start gap-3 pl-2">
+        <div className="flex shrink-0 flex-col items-center gap-1.5">
+          <span className="font-mono text-[10px] tracking-label text-ink-300">
+            {stepNum}
+          </span>
+          <div
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-white shadow-soft"
+            style={{ backgroundColor: meta.color }}
+          >
+            <Icon size={16} />
+          </div>
         </div>
+
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <p className="text-sm font-semibold leading-snug text-ink-900">
-              <span className="mr-1 text-ink-300">{index + 1}.</span>
+            <p className="font-display text-[15px] font-medium leading-snug tracking-tight text-ink-900">
               {step.title}
             </p>
             {step.durationMinutes != null && (
-              <span className="shrink-0 rounded-md bg-ink-100 px-1.5 py-0.5 text-[11px] font-medium text-ink-600">
-                ~{step.durationMinutes} min
+              <span className="shrink-0 rounded-md bg-ink-100/90 px-1.5 py-0.5 font-mono text-[10px] font-medium tnum text-ink-600">
+                ~{step.durationMinutes}m
               </span>
             )}
           </div>
           {step.description && (
-            <p className="mt-0.5 text-xs leading-relaxed text-ink-500">
+            <p className="mt-1 text-xs leading-relaxed text-ink-500">
               {step.description}
             </p>
           )}
-          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
             <span
-              className="rounded-md px-1.5 py-0.5 text-[11px] font-medium"
+              className="rounded-md px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide"
               style={{ color: meta.color, backgroundColor: `${meta.color}14` }}
             >
               {variant === "proposed" ? meta.label : actorLabel(step.actor)}
             </span>
-            <span className="rounded-md bg-ink-100 px-1.5 py-0.5 text-[11px] text-ink-500">
+            <span className="rounded-md bg-ink-100/80 px-1.5 py-0.5 font-mono text-[10px] text-ink-500">
               {step.tool}
             </span>
             {showFriction && (
               <span
                 className={cn(
-                  "rounded-md px-1.5 py-0.5 text-[11px] font-medium",
+                  "rounded-md px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide",
                   FRICTION_META[friction].className
                 )}
               >

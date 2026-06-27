@@ -14,26 +14,100 @@
   }
 
   body {
-    @apply bg-ink-50 text-ink-800 antialiased;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    @apply text-ink-800 antialiased;
+    letter-spacing: -0.011em;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
+    /* Warm "paper" canvas: faint corner washes (moss + brown) layered over a
+       barely-there engineering dot-grid, so large surfaces read as a precise
+       instrument rather than a flat AI-template white. */
+    background-color: #f6f5f0;
+    background-image:
+      radial-gradient(
+        1000px 520px at -6% -4%,
+        rgba(36, 90, 66, 0.055),
+        transparent 55%
+      ),
+      radial-gradient(
+        1100px 560px at 104% 0%,
+        rgba(194, 112, 58, 0.05),
+        transparent 55%
+      ),
+      radial-gradient(
+        circle at center,
+        rgba(24, 28, 37, 0.05) 0.6px,
+        transparent 0.7px
+      );
+    background-size:
+      100% 100%,
+      100% 100%,
+      22px 22px;
+    background-attachment: fixed;
+  }
+
+  /* Display serif gets fine-tuned rendering for crisp editorial headlines. */
+  .font-display {
+    font-optical-sizing: auto;
+    letter-spacing: -0.02em;
+    font-feature-settings: "ss01";
   }
 
   ::selection {
-    @apply bg-moss-200 text-moss-900;
+    @apply bg-moss-200/70 text-moss-900;
+  }
+
+  /* Thin, unobtrusive scrollbars (Linear/Raycast feel). */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(24, 28, 37, 0.18) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: rgba(24, 28, 37, 0.16);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(24, 28, 37, 0.28);
   }
 }
 
 @layer components {
+  /* Polished surface: hairline ring, layered ambient shadow, and a barely
+     perceptible top-down gradient + inner top highlight for crisp depth. */
   .card {
-    @apply rounded-2xl border border-ink-200/70 bg-white shadow-soft;
+    @apply relative rounded-2xl border border-ink-200/60 shadow-card;
+    background-image: linear-gradient(180deg, #ffffff 0%, #fcfdfc 100%);
+    transition:
+      box-shadow 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .card::before {
+    content: "";
+    @apply pointer-events-none absolute inset-x-0 top-0 h-px rounded-t-2xl;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.9),
+      transparent
+    );
+  }
+
+  /* Interactive cards lift gently on hover. */
+  .card-interactive {
+    @apply cursor-pointer hover:-translate-y-0.5 hover:border-ink-300/60 hover:shadow-lift;
   }
 
   .focus-ring {
-    @apply outline-none ring-offset-2 ring-offset-white focus-visible:ring-2 focus-visible:ring-moss-500;
+    @apply outline-none ring-offset-2 ring-offset-white focus-visible:ring-2 focus-visible:ring-moss-500/70;
   }
 
   .skeleton {
-    @apply relative overflow-hidden bg-ink-100;
+    @apply relative overflow-hidden rounded-lg bg-ink-100/80;
   }
   .skeleton::after {
     content: "";
@@ -41,9 +115,33 @@
     background: linear-gradient(
       90deg,
       transparent,
-      rgba(255, 255, 255, 0.65),
+      rgba(255, 255, 255, 0.7),
       transparent
     );
     animation: shimmer 1.6s infinite;
+  }
+}
+
+@layer utilities {
+  /* Subtle inner top highlight, useful on colored surfaces and pills. */
+  .highlight-top {
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.6);
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+  /* Tabular figures so monospace metrics line up like a readout. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+  /* App-canvas dot grid for sections that want extra texture. */
+  .bg-dots {
+    background-image: radial-gradient(
+      circle at center,
+      rgba(24, 28, 37, 0.06) 0.6px,
+      transparent 0.7px
+    );
+    background-size: 22px 22px;
   }
 }

@@ -11,7 +11,7 @@ const IMPACT = {
 export function BottleneckCard({ bottleneck }: { bottleneck: Bottleneck }) {
   const impact = IMPACT[bottleneck.impact];
   return (
-    <div className="rounded-xl border border-ink-100 bg-white p-4">
+    <div className="card p-4">
       <div className="flex items-start gap-3">
         <AlertTriangle
           size={18}
@@ -22,12 +22,12 @@ export function BottleneckCard({ bottleneck }: { bottleneck: Bottleneck }) {
         />
         <div className="flex-1">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-sm font-semibold text-ink-900">
+            <p className="font-display text-sm font-medium tracking-tight text-ink-900">
               {bottleneck.title}
             </p>
             <span
               className={cn(
-                "shrink-0 rounded-md px-1.5 py-0.5 text-[11px] font-medium",
+                "shrink-0 rounded-md px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide",
                 impact.className
               )}
             >
@@ -37,8 +37,8 @@ export function BottleneckCard({ bottleneck }: { bottleneck: Bottleneck }) {
           <p className="mt-1 text-xs leading-relaxed text-ink-500">
             {bottleneck.description}
           </p>
-          <p className="mt-1.5 text-xs font-medium text-ink-600">
-            ~{bottleneck.minutesPerRun} min per run
+          <p className="mt-1.5 font-mono text-[11px] font-medium tnum text-ink-600">
+            ~{bottleneck.minutesPerRun} min / run
           </p>
         </div>
       </div>

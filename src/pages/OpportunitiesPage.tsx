@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import { useApp } from "@/context/AppContext";
 import type { OptimisationOpportunity } from "@/lib/types";
 import { OpportunityCard } from "@/components/opportunities/OpportunityCard";
+import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/LoadingState";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -46,11 +47,14 @@ export function OpportunitiesPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-2">
+        <SectionLabel index="02">Continuous discovery</SectionLabel>
+        <div className="mt-2.5 flex items-center gap-2.5">
           <Inbox size={22} className="text-moss-600" />
-          <h1 className="text-2xl font-bold text-ink-900">Opportunities</h1>
+          <h1 className="font-display text-[2rem] font-medium leading-tight tracking-tighter text-ink-900">
+            Opportunities
+          </h1>
         </div>
-        <p className="text-ink-500">
+        <p className="mt-1 text-ink-500">
           The home for workflow improvements SLOTH discovers. It gets more
           valuable as it observes more repeatable work over time.
         </p>

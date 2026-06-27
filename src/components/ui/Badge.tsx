@@ -10,12 +10,12 @@ type Tone =
   | "accent";
 
 const tones: Record<Tone, string> = {
-  neutral: "bg-ink-100 text-ink-600",
-  info: "bg-calendar/10 text-calendar",
-  success: "bg-moss-100 text-moss-700",
-  warning: "bg-amber-100 text-amber-700",
-  danger: "bg-red-100 text-red-700",
-  accent: "bg-ai/10 text-ai",
+  neutral: "bg-ink-100/90 text-ink-600 ring-ink-300/40",
+  info: "bg-calendar/10 text-calendar ring-calendar/20",
+  success: "bg-moss-100/90 text-moss-700 ring-moss-400/30",
+  warning: "bg-amber-100/90 text-amber-700 ring-amber-400/30",
+  danger: "bg-red-100/90 text-red-700 ring-red-400/30",
+  accent: "bg-ai/10 text-ai ring-ai/20",
 };
 
 export function Badge({
@@ -32,7 +32,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium",
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset",
         tones[tone],
         className
       )}

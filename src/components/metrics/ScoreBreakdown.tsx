@@ -11,16 +11,23 @@ export type ScoreRow = {
 export function ScoreBreakdown({ rows }: { rows: ScoreRow[] }) {
   return (
     <div className="space-y-4">
-      {rows.map((row) => (
+      {rows.map((row, i) => (
         <div key={row.label}>
           <div className="mb-1.5 flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <span className="text-sm text-ink-600">{row.label}</span>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-[10px] text-ink-300">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <span className="font-mono text-[11px] uppercase tracking-label text-ink-500">
+                {row.label}
+              </span>
               {row.hint && <Tooltip content={row.hint} />}
             </div>
-            <span className="text-sm font-semibold text-ink-900">
+            <span className="font-display text-lg font-medium tracking-tighter tnum text-ink-900">
               {row.value}
-              <span className="text-ink-400">/100</span>
+              <span className="font-mono text-xs font-normal text-ink-400">
+                /100
+              </span>
             </span>
           </div>
           <ProgressBar

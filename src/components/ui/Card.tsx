@@ -30,12 +30,14 @@ export function CardHeader({
     >
       <div className="flex items-start gap-3">
         {icon && (
-          <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-moss-50 text-moss-600">
+          <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-b from-moss-50 to-moss-100/70 text-moss-600 ring-1 ring-inset ring-moss-200/60 highlight-top">
             {icon}
           </div>
         )}
         <div>
-          <h3 className="text-base font-semibold text-ink-900">{title}</h3>
+          <h3 className="text-[15px] font-semibold tracking-tightish text-ink-900">
+            {title}
+          </h3>
           {description && (
             <p className="mt-0.5 text-sm text-ink-500">{description}</p>
           )}

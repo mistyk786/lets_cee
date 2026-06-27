@@ -23,35 +23,44 @@ export function MetricCard({
   className?: string;
 }) {
   return (
-    <div className={cn("card p-5", className)}>
+    <div className={cn("card group p-5", className)}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
-          <p className="text-sm font-medium text-ink-500">{label}</p>
+          <p className="font-mono text-[10.5px] uppercase tracking-label text-ink-400">
+            {label}
+          </p>
           {hint && <Tooltip content={hint} />}
         </div>
-        {Icon && <Icon size={18} className="text-ink-300" />}
+        {Icon && (
+          <Icon
+            size={17}
+            className="text-ink-300 transition-colors duration-200 group-hover:text-moss-500"
+          />
+        )}
       </div>
-      <div className="mt-2 flex items-baseline gap-1.5">
-        <span className="text-3xl font-bold tracking-tight text-ink-900">
+      <div className="mt-3 flex items-baseline gap-1.5">
+        <span className="font-display text-[2.1rem] font-medium leading-none tracking-tighter tnum text-ink-900">
           {value}
         </span>
-        {unit && <span className="text-sm font-medium text-ink-400">{unit}</span>}
+        {unit && (
+          <span className="font-mono text-xs font-medium text-ink-400">
+            {unit}
+          </span>
+        )}
       </div>
-      <div className="mt-1 flex items-center gap-2">
-        {sub && <span className="text-xs text-ink-400">{sub}</span>}
+      <div className="mt-2 flex items-center gap-2">
+        {sub && (
+          <span className="font-mono text-[11px] text-ink-400">{sub}</span>
+        )}
         {trend != null && trend !== 0 && (
           <span
             className={cn(
-              "inline-flex items-center gap-0.5 text-xs font-medium",
+              "inline-flex items-center gap-0.5 font-mono text-[11px] font-medium",
               trend > 0 ? "text-amber-600" : "text-moss-600"
             )}
           >
-            {trend > 0 ? (
-              <TrendingUp size={12} />
-            ) : (
-              <TrendingDown size={12} />
-            )}
-            {Math.abs(trend)}% vs last period
+            {trend > 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+            {Math.abs(trend)}% vs last
           </span>
         )}
       </div>

@@ -4,6 +4,7 @@ import { Zap, Inbox } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { api } from "@/lib/api";
 import { ActiveAutomationCard } from "@/components/automations/ActiveAutomationCard";
+import { SectionLabel } from "@/components/ui/SectionLabel";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";
 
@@ -23,13 +24,14 @@ export function ActiveAutomationsPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-2">
+        <SectionLabel index="03">Activated</SectionLabel>
+        <div className="mt-2.5 flex items-center gap-2.5">
           <Zap size={22} className="text-moss-600" />
-          <h1 className="text-2xl font-bold text-ink-900">
+          <h1 className="font-display text-[2rem] font-medium leading-tight tracking-tighter text-ink-900">
             Active Automations
           </h1>
         </div>
-        <p className="text-ink-500">
+        <p className="mt-1 text-ink-500">
           Automations you've activated, with their live effectiveness and
           safety status.
         </p>
