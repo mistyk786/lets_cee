@@ -1,0 +1,43 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+# After deploy: set secret env vars in the Render dashboard (never commit them).
+
+services:
+  - type: web
+    name: sloth-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: SLOTH_ENV
+        value: production
+      - key: INBOX_POLL_ENABLED
+        value: "true"
+      - key: INBOX_POLL_INTERVAL_SECONDS
+        value: "120"
+      - key: CURSOR_MODEL
+        value: composer-2.5
+      - key: CURSOR_TIMEOUT_SECONDS
+        value: "120"
+      - key: IMAP_HOST
+        value: imap.gmail.com
+      - key: IMAP_PORT
+        value: "993"
+      - key: IMAP_MAILBOX
+        value: INBOX
+      - key: IMAP_MAX_MESSAGES
+        value: "80"
+      - key: LOG_LEVEL
+        value: INFO
+      # Set these in the Render dashboard (sync: false):
+      - key: CURSOR_API_KEY
+        sync: false
+      - key: IMAP_USER
+        sync: false
+      - key: IMAP_PASSWORD
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false

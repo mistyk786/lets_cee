@@ -25,26 +25,35 @@ flowchart LR
 
 ```text
 backend/app/
-  main.py                     # FastAPI app + router registration
-  models.py                   # Member 3 response models (demo data, activation)
-  schemas.py                  # Member 2 contracts (workflow, forecast, scoring)
+  main.py                     # FastAPI app, CORS (CORS_ORIGINS env), lifespan watcher
+  config.py                   # Cursor, IMAP, CORS settings
   engine.py                   # Member 2 SlothEngine facade
+  models.py                   # API response models
+  schemas.py                  # Member 2 contracts
   routers/
     demo.py                   # GET /api/demo-data
     analysis.py               # analyse / generate / forecast / effectiveness
     activation.py             # POST /api/activate-automation
+    notifications.py          # watcher, notifications, automate, bootstrap
+    ingestion.py                # ingest status, email/calendar upload
   services/
-    dataset_service.py        # load + validate raw demo dataset
-    email_normaliser.py       # group flat emails into ordered threads
+    cursor_service.py         # Cursor Cloud Agents API
+    imap_service.py           # Gmail IMAP fetch
+    inbox_watcher.py          # Background inbox poll
+    prototype_service.py      # Notification orchestration
+    workflow_service.py         # LLM workflow extraction
+    ingestion_service.py      # upload → IMAP → demo priority
+    analysis_service.py       # wraps SlothEngine + fallback
+    activation_service.py     # draft reply + slots
     calendar_service.py       # find_available_slots()
-    analysis_service.py       # wraps SlothEngine + fallback cache
-    activation_service.py     # activation simulation (in-memory state)
-    fallback.py               # on-disk demo fallback (data/cache)
-  data/
-    demo_emails.json          # 60 emails across 15 threads
-    demo_calendar.json        # 20 calendar events
-    cache/                    # pre-generated fallback fixtures
+    email_normaliser.py       # thread grouping
+    dataset_service.py        # demo JSON loaders
+    fallback.py               # on-disk cache fallback
+  data/                       # demo + cache JSON
+backend/scripts/verify-api.sh # curl verification script
 ```
+
+**Deployment:** see [BACKEND_DEPLOY.md](./BACKEND_DEPLOY.md) for env vars, Render config, API contracts, and gotchas.
 
 ## Running locally
 
@@ -52,10 +61,12 @@ backend/app/
 cd backend
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+cp .env.example .env    # fill CURSOR_API_KEY + IMAP creds
 uvicorn app.main:app --reload    # http://127.0.0.1:8000
+./scripts/verify-api.sh          # quick API checks
 ```
 
-`OPENAI_API_KEY` is optional. Without it, workflow extraction uses demo data.
+`CURSOR_API_KEY` is optional for local dev — without it, workflow extraction uses demo data.
 
 ---
 
@@ -306,14 +317,40 @@ Response `200` (truncated):
 If no slot is found, `proposed_slots` is empty, `tentative_event` is `null`, and
 `run.status` is `no_slots_found`.
 
+### GET /api/engine/health
+
+SlothEngine readiness (Cursor configured, version). See [BACKEND_DEPLOY.md](./BACKEND_DEPLOY.md).
+
+### GET /api/watcher/status
+
+Background inbox watcher state (`running`, `data_source`, `pending_email_subject`, etc.).
+
+### POST /api/watcher/scan
+
+Trigger immediate inbox scan + Cursor analysis (30–90s). Returns scan summary JSON.
+
+### GET /api/notifications
+
+List actionable notifications (`action`: `"automate"` | `"review"`).
+
+### POST /api/notifications/{id}/automate
+
+Run draft reply + slot proposal for an automate notification.
+
+### GET /api/ingest/status
+
+Report Cursor/IMAP/upload configuration state.
+
+Full JSON examples: [BACKEND_DEPLOY.md](./BACKEND_DEPLOY.md).
+
 ---
 
 ## Demo fallback
 
 Two layers keep the demo resilient:
 
-1. Member 2's engine returns demo workflow data when the LLM call fails or no
-   `OPENAI_API_KEY` is set.
+1. Member 2's engine returns demo workflow data when the Cursor API call fails or no
+   `CURSOR_API_KEY` is set.
 2. `analysis_service` wraps each call in `cached_call(...)`; any unexpected
    error returns pre-generated JSON from `app/data/cache/` (`workflow.json`,
    `automation.json`, `forecast.json`, `effectiveness.json`).
@@ -321,7 +358,7 @@ Two layers keep the demo resilient:
 ## Notes & decisions
 
 - Activation state is in-memory and resets on restart (no database).
-- Slot times are UTC; activation is anchored to a fixed demo day (`2026-06-22`)
-  so existing events visibly shift proposed slots.
+- Slot times use the next upcoming weekday (see `activation_service._next_scheduling_day`).
+- Notifications and watcher state are in-memory — redeploy clears them until next scan.
 - `generate-automation` returns proposal steps; the editable `AutomationRule`
   config is part of the `analyse-workflow` response.
