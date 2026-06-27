@@ -12,6 +12,7 @@ import logging
 import os
 
 from app.schemas import DetectedWorkflow
+from app.services.automation_service import generate_automation_proposal
 from app.services.demo_data import load_demo_workflow
 
 logger = logging.getLogger(__name__)
@@ -108,7 +109,12 @@ def extract_workflow(email_threads: list[dict]) -> DetectedWorkflow:
         if not content:
             raise ValueError("OpenAI returned empty content")
 
-        return DetectedWorkflow.model_validate(json.loads(content.strip()))
+        workflow = DetectedWorkflow.model_validate(json.loads(content.strip()))
+        return workflow.model_copy(
+            update={
+                "automation_proposal": generate_automation_proposal(workflow),
+            }
+        )
     except Exception as exc:  # noqa: BLE001 - any failure -> safe fallback
         logger.warning(
             "extract_workflow falling back to demo data: %s", exc
