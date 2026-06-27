@@ -130,7 +130,7 @@ export function AutomatePage() {
           >
             <div>
               <p className="font-mono text-[11px] uppercase tracking-label text-moss-600">
-                Prototype — one-click automate
+                {api.isLive() ? "Live automation" : "Preview mode"}
               </p>
               <h1 className="mt-2 font-display text-3xl font-medium tracking-tighter text-ink-900">
                 {done ? "Automation complete" : notification.title}
@@ -146,11 +146,11 @@ export function AutomatePage() {
                 <ul className="space-y-3 text-sm text-ink-600">
                   <li className="flex gap-3">
                     <Calendar size={18} className="shrink-0 text-calendar" />
-                    Check your calendar for free slots (demo data)
+                    Check your calendar for free slots
                   </li>
                   <li className="flex gap-3">
                     <Mail size={18} className="shrink-0 text-email" />
-                    Draft a reply with proposed meeting times
+                    Read the incoming email and draft a personalised reply with AI
                   </li>
                   <li className="flex gap-3">
                     <Sparkles size={18} className="shrink-0 text-moss-600" />
@@ -165,7 +165,8 @@ export function AutomatePage() {
                 >
                   {running ? (
                     <>
-                      <Loader2 size={18} className="animate-spin" /> Running…
+                      <Loader2 size={18} className="animate-spin" />{" "}
+                      Reading email &amp; drafting reply…
                     </>
                   ) : (
                     <>
@@ -185,11 +186,35 @@ export function AutomatePage() {
                   </span>
                 </div>
 
-                {result.preview?.draftReply && (
+                {result.preview?.originalEmail?.body && (
                   <div className="card p-5">
                     <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
-                      Draft reply
+                      Email Sloth replied to
                     </p>
+                    <p className="mt-2 text-sm font-medium text-ink-900">
+                      {result.preview.originalEmail.subject}
+                    </p>
+                    <p className="mt-1 text-xs text-ink-500">
+                      From {result.preview.originalEmail.sender}
+                    </p>
+                    <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink-600">
+                      {result.preview.originalEmail.body}
+                    </p>
+                  </div>
+                )}
+
+                {result.preview?.draftReply && (
+                  <div className="card p-5">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
+                        Draft reply
+                      </p>
+                      {result.preview.replySource === "cursor" && (
+                        <span className="rounded-md bg-moss-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-moss-700">
+                          AI-generated
+                        </span>
+                      )}
+                    </div>
                     <pre className="mt-3 whitespace-pre-wrap font-sans text-sm text-ink-700">
                       {result.preview.draftReply}
                     </pre>

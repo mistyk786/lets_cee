@@ -429,11 +429,20 @@ export function mapActivationResponse(
     automation,
     preview: {
       draftReply: body.draft_reply,
+      replySource: body.reply_source,
+      originalEmail:
+        body.processed_email_subject || body.processed_email_body
+          ? {
+              subject: body.processed_email_subject ?? "",
+              sender: body.processed_email_sender ?? "",
+              body: body.processed_email_body ?? "",
+            }
+          : undefined,
       proposedSlots: slotLabels,
       slotCount: slotLabels.length,
       tentativeEventTitle: body.tentative_event?.title,
       triggerLabel: body.draft_reply
-        ? "New scheduling email detected"
+        ? "Reply drafted from your inbox"
         : undefined,
     },
   };

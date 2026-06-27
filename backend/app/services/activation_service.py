@@ -22,6 +22,7 @@ from app.schemas import AutomationRule
 from app.services.calendar_service import find_available_slots
 from app.services.demo_data import load_demo_workflow
 from app.services import ingestion_service
+from app.services.reply_service import generate_scheduling_reply
 
 
 def _next_scheduling_day() -> str:
@@ -62,21 +63,6 @@ def _busy_events() -> list[dict[str, str]]:
     return events
 
 
-def _draft_reply(sender: str, slots: list[TimeSlot]) -> str:
-    if not slots:
-        return (
-            "Hi,\n\nThanks for reaching out. I couldn't find availability in "
-            "the requested window - could you share a few alternative dates?\n\n"
-            "Best,"
-        )
-    lines = ["Hi,", "", "Thanks for the note. Here are a few times that work:"]
-    lines.extend(f"- {s.start_time} to {s.end_time}" for s in slots)
-    lines.extend(
-        ["", "Let me know which suits you and I'll send an invite.", "", "Best,"]
-    )
-    return "\n".join(lines)
-
-
 def activate(
     rules: AutomationRule | None = None,
     incoming_email: dict[str, Any] | None = None,
@@ -103,7 +89,11 @@ def activate(
     )
     slots = [TimeSlot(**s) for s in raw_slots]
 
-    draft = _draft_reply(email["sender"], slots)
+    draft, reply_source = generate_scheduling_reply(
+        incoming_email=email,
+        proposed_slots=slots,
+        rules=active_rules,
+    )
 
     tentative_event: TentativeEvent | None = None
     created_event_id: str | None = None
@@ -131,7 +121,10 @@ def activate(
     return ActivationResponse(
         rules=active_rules,
         processed_email_subject=email["subject"],
+        processed_email_sender=str(email.get("sender", "")),
+        processed_email_body=str(email.get("body", "")),
         draft_reply=draft,
+        reply_source=reply_source,
         proposed_slots=slots,
         tentative_event=tentative_event,
         run=run,

@@ -106,6 +106,9 @@ export type BackendAutomationRun = {
 export type BackendActivationResponse = {
   draft_reply?: string;
   processed_email_subject?: string;
+  processed_email_sender?: string;
+  processed_email_body?: string;
+  reply_source?: "cursor" | "template";
   proposed_slots?: BackendTimeSlot[] | string[];
   tentative_event?: BackendTentativeEvent;
   run?: BackendAutomationRun;
