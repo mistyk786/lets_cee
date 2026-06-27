@@ -21,8 +21,10 @@ export function WorkflowDiagram({
         <Fragment key={step.id}>
           <WorkflowNode step={step} variant={variant} index={i} />
           {i < steps.length - 1 && (
-            <div className="flex justify-center py-1.5">
-              <ChevronDown size={18} className="text-ink-300" />
+            <div className="flex flex-col items-center py-1">
+              <span className="h-3 w-px bg-ink-200" />
+              <ChevronDown size={14} className="text-ink-300" />
+              <span className="h-3 w-px bg-ink-200" />
             </div>
           )}
         </Fragment>
@@ -44,7 +46,9 @@ export function WorkflowLegend({ kinds }: { kinds: NodeKind[] }) {
               className="h-2.5 w-2.5 rounded-full"
               style={{ backgroundColor: meta.color }}
             />
-            <span className="text-xs text-ink-500">{meta.label}</span>
+            <span className="font-mono text-[10px] uppercase tracking-wide text-ink-400">
+              {meta.label}
+            </span>
           </div>
         );
       })}

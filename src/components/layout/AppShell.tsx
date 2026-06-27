@@ -1,12 +1,13 @@
 import { Outlet } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
+import { CommandPalette } from "./CommandPalette";
 import { SlothAssistantPanel } from "@/components/assistant/SlothAssistantPanel";
 
 /** App shell for the authenticated/in-product experience (everything but the landing page). */
 export function AppShell() {
   return (
-    <div className="flex min-h-screen bg-ink-50">
+    <div className="flex min-h-screen">
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <Header />
@@ -14,6 +15,7 @@ export function AppShell() {
           <Outlet />
         </main>
       </div>
+      <CommandPalette />
       <SlothAssistantPanel />
     </div>
   );

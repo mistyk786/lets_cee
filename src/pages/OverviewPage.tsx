@@ -12,6 +12,7 @@ import {
 import { api } from "@/lib/api";
 import type { OverviewSummary } from "@/lib/types";
 import { StepProgress } from "@/components/layout/StepProgress";
+import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { ScoreRing } from "@/components/ui/Progress";
@@ -41,8 +42,8 @@ export function OverviewPage() {
       {/* Header row */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm text-ink-400">Workflow analysis</p>
-          <h1 className="text-2xl font-bold text-ink-900">
+          <SectionLabel index="01">Workflow analysis</SectionLabel>
+          <h1 className="mt-2.5 font-display text-[2rem] font-medium leading-tight tracking-tighter text-ink-900">
             {summary?.workflowName ?? "Internal Meeting Scheduling"}
           </h1>
         </div>

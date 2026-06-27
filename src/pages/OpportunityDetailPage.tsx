@@ -161,8 +161,8 @@ export function OpportunityDetailPage() {
         </button>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-bold capitalize text-ink-900">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h1 className="font-display text-[2rem] font-medium capitalize leading-tight tracking-tighter text-ink-900">
                 {opp.workflowName}
               </h1>
               <Badge tone={status.tone} dot={opp.status === "detected"}>

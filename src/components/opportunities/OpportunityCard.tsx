@@ -40,7 +40,7 @@ export function OpportunityCard({
   const risk = riskMeta(opportunity.riskLevel);
 
   return (
-    <div className="card flex flex-col p-5 transition-shadow hover:shadow-lift">
+    <div className="card card-interactive group flex flex-col p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">

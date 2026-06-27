@@ -33,6 +33,9 @@ type AppState = {
 
   assistantOpen: boolean;
   setAssistantOpen: (open: boolean) => void;
+
+  commandPaletteOpen: boolean;
+  setCommandPaletteOpen: (open: boolean | ((prev: boolean) => boolean)) => void;
 };
 
 const AppContext = createContext<AppState | null>(null);
@@ -47,6 +50,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     Record<string, AutomationRule>
   >({});
   const [assistantOpen, setAssistantOpen] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
   useEffect(() => {
     api.getNotifications().then(setNotifications);
@@ -84,8 +88,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setDraftRules,
       assistantOpen,
       setAssistantOpen,
+      commandPaletteOpen,
+      setCommandPaletteOpen,
     }),
-    [demoLoaded, notifications, activeAutomations, draftRules, assistantOpen]
+    [
+      demoLoaded,
+      notifications,
+      activeAutomations,
+      draftRules,
+      assistantOpen,
+      commandPaletteOpen,
+    ]
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

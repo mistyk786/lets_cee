@@ -71,7 +71,10 @@ export function SetupPage() {
               exit={{ opacity: 0, y: -8 }}
             >
               <div className="text-center">
-                <h1 className="text-2xl font-bold text-ink-900">
+                <p className="mb-3 font-mono text-[11px] uppercase tracking-label text-moss-600">
+                  Demo dataset
+                </p>
+                <h1 className="font-display text-3xl font-medium tracking-tighter text-ink-900">
                   Analyse a workflow with the demo dataset
                 </h1>
                 <p className="mt-2 text-ink-500">
@@ -122,7 +125,7 @@ export function SetupPage() {
                   </p>
                   <div className="mt-3 grid grid-cols-3 gap-3 text-center">
                     <div>
-                      <p className="text-2xl font-bold text-ink-900">
+                      <p className="font-display text-3xl font-medium tracking-tighter tnum text-ink-900">
                         {dataset?.summary.schedulingEmailRequests ?? 45}
                       </p>
                       <p className="text-xs text-ink-500">
@@ -130,13 +133,13 @@ export function SetupPage() {
                       </p>
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-ink-900">
+                      <p className="font-display text-3xl font-medium tracking-tighter tnum text-ink-900">
                         {dataset?.summary.calendarSources ?? 3}
                       </p>
                       <p className="text-xs text-ink-500">calendar sources</p>
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-ink-900">
+                      <p className="font-display text-3xl font-medium tracking-tighter tnum text-ink-900">
                         {dataset?.summary.activityHistoryDays ?? 30}
                       </p>
                       <p className="text-xs text-ink-500">days of history</p>

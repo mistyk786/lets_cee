@@ -44,7 +44,7 @@ export function StepProgress({
               </span>
               <span
                 className={cn(
-                  "text-sm font-medium",
+                  "font-mono text-xs uppercase tracking-wide",
                   state === "todo" ? "text-ink-400" : "text-ink-800"
                 )}
               >

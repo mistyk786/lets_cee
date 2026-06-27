@@ -8,6 +8,7 @@ import {
   Info,
 } from "lucide-react";
 import type { Forecast } from "@/lib/types";
+import { SectionLabel } from "@/components/ui/SectionLabel";
 import { cn } from "@/lib/utils";
 
 /**
@@ -26,111 +27,139 @@ export function ForecastPanel({ forecast }: { forecast: Forecast }) {
   const maxHours = forecast.optimisticHours || 1;
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center gap-2 rounded-xl bg-ink-50 px-3 py-2 text-xs text-ink-500">
-        <Info size={14} className="shrink-0 text-ink-400" />
-        These are estimates based on observed workflow frequency and your
-        editable assumptions — not guarantees.
+    <div className="space-y-6">
+      <div className="flex items-start gap-2 rounded-xl border border-ink-200/60 bg-ink-50/50 px-3 py-2.5">
+        <Info size={14} className="mt-0.5 shrink-0 text-ink-400" />
+        <p className="font-mono text-[11px] leading-relaxed text-ink-500">
+          Estimates based on observed workflow frequency and your editable
+          assumptions — not guarantees.
+        </p>
       </div>
 
-      {/* Scenario comparison bars */}
-      <div className="space-y-3">
-        {scenarios.map((s) => (
-          <div key={s.label} className="flex items-center gap-3">
-            <span className="w-24 text-sm font-medium text-ink-600">
-              {s.label}
-            </span>
-            <div className="flex-1">
-              <div className="h-8 overflow-hidden rounded-lg bg-ink-100">
-                <div
-                  className={cn(
-                    "flex h-full items-center justify-end rounded-lg pr-2 text-xs font-semibold text-white transition-[width] duration-700",
-                    s.tone === "moss"
-                      ? "bg-moss-600"
-                      : s.tone === "info"
-                        ? "bg-calendar"
-                        : "bg-ink-400"
-                  )}
-                  style={{ width: `${(s.hours / maxHours) * 100}%` }}
-                >
-                  {s.hours} h/mo
+      {/* Scenario comparison */}
+      <div>
+        <SectionLabel index="A">Time saved scenarios</SectionLabel>
+        <div className="mt-4 space-y-3">
+          {scenarios.map((s) => (
+            <div key={s.label} className="flex items-center gap-3">
+              <span className="w-24 font-mono text-[11px] uppercase tracking-label text-ink-500">
+                {s.label}
+              </span>
+              <div className="flex-1">
+                <div className="h-9 overflow-hidden rounded-lg bg-ink-100/80 ring-1 ring-inset ring-ink-200/50">
+                  <div
+                    className={cn(
+                      "flex h-full items-center justify-end rounded-lg pr-2.5 font-mono text-[11px] font-medium tnum text-white transition-[width] duration-700",
+                      s.tone === "moss"
+                        ? "bg-moss-600"
+                        : s.tone === "info"
+                          ? "bg-calendar"
+                          : "bg-ink-400"
+                    )}
+                    style={{ width: `${(s.hours / maxHours) * 100}%` }}
+                  >
+                    {s.hours} h/mo
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
-      {/* Key figures */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <FigureTile
-          icon={Clock}
-          value={`${forecast.annualHours} h`}
-          label="Est. annual time saved"
-        />
-        <FigureTile
-          icon={Timer}
-          value={`${Math.round(forecast.eligibleCoverage * 100)}%`}
-          label="Eligible coverage"
-        />
-        <FigureTile
-          icon={CalendarCheck}
-          value={`${forecast.manualCalendarChecksAvoided}/mo`}
-          label="Calendar checks avoided"
-        />
-        <FigureTile
-          icon={MailMinus}
-          value={`${forecast.emailsAvoided}/mo`}
-          label="Scheduling emails avoided"
-        />
+      {/* Key figures ledger */}
+      <div>
+        <SectionLabel index="B">Impact ledger</SectionLabel>
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <FigureTile
+            icon={Clock}
+            value={`${forecast.annualHours}`}
+            unit="h"
+            label="Annual saved"
+          />
+          <FigureTile
+            icon={Timer}
+            value={`${Math.round(forecast.eligibleCoverage * 100)}`}
+            unit="%"
+            label="Eligible coverage"
+          />
+          <FigureTile
+            icon={CalendarCheck}
+            value={`${forecast.manualCalendarChecksAvoided}`}
+            unit="/mo"
+            label="Calendar checks"
+          />
+          <FigureTile
+            icon={MailMinus}
+            value={`${forecast.emailsAvoided}`}
+            unit="/mo"
+            label="Emails avoided"
+          />
+        </div>
       </div>
 
       {/* Cycle time before/after */}
-      <div className="rounded-2xl border border-ink-100 bg-ink-50/60 p-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
-          Projected scheduling cycle time
-        </p>
-        <div className="mt-3 flex items-center gap-4">
-          <div className="flex-1 rounded-xl bg-white p-3 text-center">
-            <p className="text-xs text-ink-400">Before</p>
-            <p className="text-xl font-bold text-ink-700">
-              {forecast.cycleTimeBeforeDays} days
+      <div className="card bg-dots p-4">
+        <SectionLabel>Cycle time projection</SectionLabel>
+        <div className="mt-4 flex items-center gap-4">
+          <div className="flex-1 rounded-xl bg-white/80 p-3 text-center ring-1 ring-inset ring-ink-200/50">
+            <p className="font-mono text-[10px] uppercase tracking-label text-ink-400">
+              Before
+            </p>
+            <p className="mt-1 font-display text-2xl font-medium tracking-tighter tnum text-ink-700">
+              {forecast.cycleTimeBeforeDays}
+              <span className="ml-1 font-mono text-xs text-ink-400">days</span>
             </p>
           </div>
           <ChevronDown className="-rotate-90 text-ink-300" size={20} />
-          <div className="flex-1 rounded-xl bg-moss-50 p-3 text-center">
-            <p className="text-xs text-moss-600">After</p>
-            <p className="text-xl font-bold text-moss-700">
-              {forecast.cycleTimeAfterDays < 1
-                ? "under 1 day"
-                : `${forecast.cycleTimeAfterDays} days`}
+          <div className="flex-1 rounded-xl bg-moss-50/80 p-3 text-center ring-1 ring-inset ring-moss-200/50">
+            <p className="font-mono text-[10px] uppercase tracking-label text-moss-600">
+              After
+            </p>
+            <p className="mt-1 font-display text-2xl font-medium tracking-tighter tnum text-moss-700">
+              {forecast.cycleTimeAfterDays < 1 ? (
+                <>
+                  &lt;1
+                  <span className="ml-1 font-mono text-xs text-moss-500/80">
+                    day
+                  </span>
+                </>
+              ) : (
+                <>
+                  {forecast.cycleTimeAfterDays}
+                  <span className="ml-1 font-mono text-xs text-moss-500/80">
+                    days
+                  </span>
+                </>
+              )}
             </p>
           </div>
         </div>
       </div>
 
       {/* How SLOTH calculated this */}
-      <div className="rounded-2xl border border-ink-100">
+      <div className="card overflow-hidden">
         <button
           onClick={() => setShowMath((s) => !s)}
-          className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-ink-700 focus-ring rounded-2xl"
+          className="flex w-full items-center justify-between px-4 py-3 text-left focus-ring"
         >
-          How SLOTH calculated this
+          <span className="font-mono text-[11px] uppercase tracking-label text-ink-600">
+            How SLOTH calculated this
+          </span>
           <ChevronDown
             size={18}
             className={cn(
-              "text-ink-400 transition-transform",
+              "text-ink-400 transition-transform duration-200",
               showMath && "rotate-180"
             )}
           />
         </button>
         {showMath && (
-          <div className="space-y-3 border-t border-ink-100 px-4 py-3 text-sm text-ink-600 animate-fade-in">
-            <code className="block rounded-lg bg-ink-900 px-3 py-2 text-xs leading-relaxed text-moss-100">
-              Eligible workflow runs × (manual time per run − review time per
-              run) − exception handling time
+          <div className="space-y-3 border-t border-ink-200/70 px-4 py-3 animate-fade-in">
+            <code className="block rounded-lg bg-ink-900 px-3 py-2.5 font-mono text-[11px] leading-relaxed text-moss-100">
+              eligible_runs × (manual_min − review_min) − exception_min
             </code>
-            <p>
+            <p className="text-sm leading-relaxed text-ink-600">
               We multiply how often the workflow runs by the time saved per run
               (manual effort minus the time you spend reviewing SLOTH's draft),
               then subtract a buffer for exceptions that still need you.
@@ -145,17 +174,26 @@ export function ForecastPanel({ forecast }: { forecast: Forecast }) {
 function FigureTile({
   icon: Icon,
   value,
+  unit,
   label,
 }: {
   icon: typeof Clock;
   value: string;
+  unit: string;
   label: string;
 }) {
   return (
-    <div className="rounded-xl border border-ink-100 bg-white p-3">
-      <Icon size={16} className="text-moss-500" />
-      <p className="mt-2 text-lg font-bold text-ink-900">{value}</p>
-      <p className="text-xs text-ink-400">{label}</p>
+    <div className="card p-3">
+      <Icon size={15} className="text-moss-500" />
+      <div className="mt-2 flex items-baseline gap-1">
+        <span className="font-display text-2xl font-medium tracking-tighter tnum text-ink-900">
+          {value}
+        </span>
+        <span className="font-mono text-xs text-ink-400">{unit}</span>
+      </div>
+      <p className="mt-1 font-mono text-[10px] uppercase tracking-label text-ink-400">
+        {label}
+      </p>
     </div>
   );
 }

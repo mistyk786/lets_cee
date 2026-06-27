@@ -13,6 +13,7 @@ import {
 import { api } from "@/lib/api";
 import type { EffectivenessMetrics } from "@/lib/types";
 import { StepProgress } from "@/components/layout/StepProgress";
+import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { ScoreRing } from "@/components/ui/Progress";
@@ -49,9 +50,12 @@ export function EffectivenessPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="flex items-center gap-2">
+          <SectionLabel index="04">Measure</SectionLabel>
+          <div className="mt-2.5 flex items-center gap-2.5">
             <BarChart3 size={22} className="text-moss-600" />
-            <h1 className="text-2xl font-bold text-ink-900">Measure Impact</h1>
+            <h1 className="font-display text-[2rem] font-medium leading-tight tracking-tighter text-ink-900">
+              Measure Impact
+            </h1>
           </div>
           <p className="mt-1 text-ink-500">
             Internal Meeting Scheduling Assistant · effectiveness after
@@ -75,10 +79,8 @@ export function EffectivenessPage() {
               </Badge>
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
-                Automation Effectiveness Score
-              </p>
-              <p className="mt-2 text-lg font-medium leading-relaxed text-ink-800">
+              <SectionLabel index="A">Effectiveness score</SectionLabel>
+              <p className="mt-3 font-display text-lg font-medium leading-relaxed tracking-tight text-ink-800">
                 {needsReview
                   ? "A safety issue was detected. Approval mode stays on and expansion is paused until you review what happened."
                   : "The automation is saving close to its forecasted time, has low correction rates, and is reducing scheduling delays."}
@@ -104,10 +106,8 @@ export function EffectivenessPage() {
 
       {/* Metric cards */}
       <div>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-400">
-          Performance metrics
-        </h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <SectionLabel index="B">Performance metrics</SectionLabel>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <MetricCard
             label="Realised time saved"
             value={d.realisedMinutes}
@@ -223,11 +223,9 @@ export function EffectivenessPage() {
           </div>
 
           {/* Score interpretation guide */}
-          <div className="rounded-2xl border border-ink-100 bg-ink-50/60 p-5">
-            <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
-              How to read this score
-            </p>
-            <ul className="mt-3 space-y-1.5 text-xs text-ink-600">
+          <div className="rounded-2xl border border-ink-200/60 bg-ink-50/40 p-5">
+            <SectionLabel>How to read this score</SectionLabel>
+            <ul className="mt-3 space-y-2">
               <Interpretation range="90–100" text="Excellent — expand carefully" />
               <Interpretation
                 range="75–89"
@@ -251,21 +249,25 @@ export function EffectivenessPage() {
 
 function Highlight({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-moss-50 px-3 py-2">
-      <p className="inline-flex items-center gap-1 text-xs text-moss-700">
-        <TrendingUp size={12} />
+    <div className="rounded-xl border border-moss-200/50 bg-moss-50/60 px-3 py-2.5 ring-1 ring-inset ring-moss-100/50">
+      <p className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-label text-moss-700">
+        <TrendingUp size={11} />
         {label}
       </p>
-      <p className="mt-0.5 text-lg font-bold text-ink-900">{value}</p>
+      <p className="mt-1 font-display text-xl font-medium tracking-tighter tnum text-ink-900">
+        {value}
+      </p>
     </div>
   );
 }
 
 function Interpretation({ range, text }: { range: string; text: string }) {
   return (
-    <li className="flex items-start gap-2">
-      <span className="w-16 shrink-0 font-semibold text-ink-700">{range}</span>
-      <span>{text}</span>
+    <li className="flex items-start gap-3">
+      <span className="w-16 shrink-0 font-mono text-[11px] font-medium tnum text-ink-500">
+        {range}
+      </span>
+      <span className="text-xs text-ink-600">{text}</span>
     </li>
   );
 }

@@ -101,9 +101,11 @@ export function ScoreRing({
         />
       </svg>
       <div className="absolute flex flex-col items-center">
-        <span className="text-2xl font-bold text-ink-900">{score}</span>
+        <span className="font-display text-[1.75rem] font-medium leading-none tracking-tighter tnum text-ink-900">
+          {score}
+        </span>
         {label && (
-          <span className="text-[11px] font-medium uppercase tracking-wide text-ink-400">
+          <span className="mt-1 font-mono text-[10px] uppercase tracking-label text-ink-400">
             {label}
           </span>
         )}
