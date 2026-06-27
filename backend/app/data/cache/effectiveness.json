@@ -1,0 +1,11 @@
+{
+  "realised_time_score": 24.0,
+  "coverage_score": 16.0,
+  "reliability_score": 15.0,
+  "quality_score": 12.0,
+  "cycle_time_score": 5.0,
+  "acceptance_score": 2.0,
+  "safety_status": "ok",
+  "overall_score": 74.0,
+  "recommendation": "Good performance. Monitor exception rate."
+}

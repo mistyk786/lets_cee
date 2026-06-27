@@ -1,0 +1,65 @@
+[
+  {
+    "step_id": "step_1",
+    "name": "Read incoming meeting request",
+    "description": "Triage inbound email asking to schedule a meeting.",
+    "is_manual": false,
+    "avg_minutes": 2.0,
+    "is_automatable": true,
+    "requires_approval": false
+  },
+  {
+    "step_id": "step_2",
+    "name": "Identify attendees and intent",
+    "description": "Parse who needs to attend and the meeting purpose.",
+    "is_manual": false,
+    "avg_minutes": 2.5,
+    "is_automatable": true,
+    "requires_approval": false
+  },
+  {
+    "step_id": "step_3",
+    "name": "Check calendar availability",
+    "description": "Cross-reference free/busy times across attendees.",
+    "is_manual": false,
+    "avg_minutes": 4.0,
+    "is_automatable": true,
+    "requires_approval": false
+  },
+  {
+    "step_id": "step_4",
+    "name": "Draft proposed time slots",
+    "description": "Compose 3 candidate slots within working hours.",
+    "is_manual": false,
+    "avg_minutes": 3.0,
+    "is_automatable": true,
+    "requires_approval": false
+  },
+  {
+    "step_id": "step_5",
+    "name": "[Approval] Confirm time with manager",
+    "description": "Get sign-off before committing external-facing slots.",
+    "is_manual": true,
+    "avg_minutes": 2.0,
+    "is_automatable": true,
+    "requires_approval": true
+  },
+  {
+    "step_id": "step_6",
+    "name": "Send calendar invite",
+    "description": "Create the event and dispatch invites to attendees.",
+    "is_manual": false,
+    "avg_minutes": 2.5,
+    "is_automatable": true,
+    "requires_approval": false
+  },
+  {
+    "step_id": "step_7",
+    "name": "Handle reschedule replies",
+    "description": "Negotiate conflicts and re-send updated invites. (Manual handoff: not automatable \u2014 requires a human.)",
+    "is_manual": true,
+    "avg_minutes": 2.0,
+    "is_automatable": false,
+    "requires_approval": false
+  }
+]

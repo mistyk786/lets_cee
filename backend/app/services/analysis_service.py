@@ -17,6 +17,13 @@ from app.schemas import (
 from app.services.dataset_service import load_demo_emails
 from app.services.demo_data import load_demo_effectiveness, load_demo_workflow
 from app.services.email_normaliser import normalise_threads
+from app.services.fallback import (
+    cached_call,
+    load_cached_automation,
+    load_cached_effectiveness,
+    load_cached_forecast,
+    load_cached_workflow,
+)
 
 _engine = SlothEngine()
 
@@ -31,23 +38,35 @@ def analyse_workflow(
     demo_mode: bool = False,
 ) -> DetectedWorkflow:
     """Detect a repeated workflow, defaulting to the bundled demo threads."""
-    threads = email_threads if email_threads is not None else _demo_threads()
-    return _engine.detect_workflow(threads, demo_mode=demo_mode)
+
+    def _run() -> DetectedWorkflow:
+        threads = email_threads if email_threads is not None else _demo_threads()
+        return _engine.detect_workflow(threads, demo_mode=demo_mode)
+
+    return cached_call(_run, fallback=load_cached_workflow)
 
 
 def generate_automation(
     workflow: DetectedWorkflow | None = None,
 ) -> list[WorkflowStep]:
     """Build the future-state automation proposal for a detected workflow."""
-    target = workflow if workflow is not None else load_demo_workflow()
-    return _engine.propose_automation(target)
+
+    def _run() -> list[WorkflowStep]:
+        target = workflow if workflow is not None else load_demo_workflow()
+        return _engine.propose_automation(target)
+
+    return cached_call(_run, fallback=load_cached_automation)
 
 
 def forecast(inputs: ForecastInputs) -> ForecastMetrics:
     """Forecast conservative/likely/optimistic hours saved."""
-    return _engine.forecast(inputs)
+    return cached_call(
+        lambda: _engine.forecast(inputs), fallback=load_cached_forecast
+    )
 
 
 def effectiveness() -> EffectivenessMetrics:
     """Return the seeded post-automation effectiveness breakdown."""
-    return load_demo_effectiveness()
+    return cached_call(
+        load_demo_effectiveness, fallback=load_cached_effectiveness
+    )
