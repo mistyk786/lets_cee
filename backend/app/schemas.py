@@ -115,6 +115,7 @@ class DetectedWorkflow(BaseModel):
     workflow_category: WorkflowCategory = "other"
     automation_summary: str = ""
     automatable_actions: list[str] = Field(default_factory=list)
+    detected_patterns: list[str] = Field(default_factory=list)
 
 
 class ForecastMetrics(BaseModel):

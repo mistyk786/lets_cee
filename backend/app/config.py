@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     imap_user: str | None = Field(default=None, alias="IMAP_USER")
     imap_password: str | None = Field(default=None, alias="IMAP_PASSWORD")
     imap_mailbox: str = Field(default="INBOX", alias="IMAP_MAILBOX")
+    imap_sent_mailbox: str | None = Field(default=None, alias="IMAP_SENT_MAILBOX")
     imap_max_messages: int = Field(default=80, alias="IMAP_MAX_MESSAGES", ge=10, le=500)
 
     inbox_poll_enabled: bool = Field(default=True, alias="INBOX_POLL_ENABLED")

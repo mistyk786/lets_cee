@@ -1,12 +1,14 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.engine import SlothEngine
+from app.request_context import set_effective_settings
 from app.routers import activation, analysis, demo, ingestion, notifications
 from app.services import inbox_watcher
+from app.services.session_service import SESSION_HEADER, settings_for_session
 
 
 @asynccontextmanager
@@ -19,6 +21,18 @@ async def lifespan(_app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 _settings = get_settings()
+
+
+@app.middleware("http")
+async def attach_inbox_session(request: Request, call_next):
+    session_id = request.headers.get(SESSION_HEADER)
+    set_effective_settings(settings_for_session(session_id))
+    try:
+        return await call_next(request)
+    finally:
+        set_effective_settings(None)
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_settings.cors_origin_list(),

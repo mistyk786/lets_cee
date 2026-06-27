@@ -249,6 +249,7 @@ export type OverviewSummary = {
   automationAvailable?: boolean;
   automatableActions?: string[];
   workflowCategory?: string;
+  detectedPatterns?: string[];
 };
 
 export type DataSource = "demo" | "imap" | "upload" | "unknown";

@@ -17,6 +17,7 @@ import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
 import { WatcherStatusPanel } from "@/components/layout/WatcherStatusPanel";
 import { RecentInboxPanel } from "@/components/inbox/RecentInboxPanel";
+import { ConnectInboxPanel } from "@/components/inbox/ConnectInboxPanel";
 
 const ANALYSIS_STEPS = [
   "Reading recent inbox messages…",
@@ -136,6 +137,8 @@ export function SetupPage() {
               </div>
 
               <div className="mt-8 space-y-4">
+                {live && <ConnectInboxPanel />}
+
                 <WatcherStatusPanel status={watcherStatus} compact />
 
                 {live && <RecentInboxPanel limit={8} />}
@@ -158,10 +161,10 @@ export function SetupPage() {
                       What happens on scan
                     </p>
                     <ul className="mt-3 space-y-2 text-sm text-ink-700">
-                      <li>• Reads your real inbox via IMAP (no OAuth)</li>
-                      <li>• AI detects repeated workflows across email types</li>
-                      <li>• Shows “no automation available” if nothing qualifies</li>
-                      <li>• First AI scan may take up to 2 minutes</li>
+                      <li>• Connect your inbox with an app password (or use server IMAP)</li>
+                      <li>• Reads inbox + sent mail for repeated subjects and senders</li>
+                      <li>• AI names the exact pattern — not generic “meeting workflow”</li>
+                      <li>• First scan may take up to 2 minutes</li>
                     </ul>
                   </div>
                 ) : (

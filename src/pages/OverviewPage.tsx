@@ -11,6 +11,7 @@ import { useApp } from "@/context/AppContext";
 import type { OverviewSummary } from "@/lib/types";
 import { WatcherStatusPanel } from "@/components/layout/WatcherStatusPanel";
 import { RecentInboxPanel } from "@/components/inbox/RecentInboxPanel";
+import { DetectedPatternsPanel } from "@/components/inbox/DetectedPatternsPanel";
 import { StepProgress } from "@/components/layout/StepProgress";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Badge } from "@/components/ui/Badge";
@@ -56,6 +57,10 @@ export function OverviewPage() {
 
       {live && <RecentInboxPanel limit={6} compact />}
 
+      {summary?.detectedPatterns && summary.detectedPatterns.length > 0 && (
+        <DetectedPatternsPanel patterns={summary.detectedPatterns} />
+      )}
+
       {!summary ? (
         <Skeleton className="h-64 w-full" />
       ) : summary.automationAvailable === false ? (
@@ -65,6 +70,11 @@ export function OverviewPage() {
             {summary.workflowName}
           </h2>
           <p className="mx-auto mt-3 max-w-lg text-ink-600">{summary.explanation}</p>
+          {summary.detectedPatterns && summary.detectedPatterns.length > 0 && (
+            <div className="mx-auto mt-6 max-w-lg text-left">
+              <DetectedPatternsPanel patterns={summary.detectedPatterns} />
+            </div>
+          )}
           <p className="mt-4 text-sm text-ink-500">
             {live
               ? "This is from your real Gmail — not demo data. Sloth only recommends automation when the pattern repeats and the score is high enough."

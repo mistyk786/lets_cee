@@ -20,6 +20,13 @@ import type {
 } from "./backend/types";
 import { fetchWithFallback, getApiBaseUrl, isBackendConfigured } from "./http";
 import {
+  getInboxSessionId,
+  inboxSessionHeaders,
+  mapInboxSession,
+  setInboxSessionId,
+  type InboxSessionInfo,
+} from "./inboxSession";
+import {
   mapActivationResponse,
   mapDemoDataRaw,
   mapDetectedWorkflowToOpportunity,
@@ -69,6 +76,9 @@ export const ENDPOINTS = {
   watcherScan: "/api/watcher/scan",
   ingestStatus: "/api/ingest/status",
   recentInbox: "/api/inbox/recent",
+  inboxConnect: "/api/inbox/connect",
+  inboxDisconnect: "/api/inbox/disconnect",
+  inboxSession: "/api/inbox/session",
   opportunities: "/api/opportunities",
   opportunity: (id: string) => `/api/opportunities/${id}`,
   reviewOpportunity: (id: string) => `/api/opportunities/${id}/review`,
@@ -135,7 +145,11 @@ async function fetchLiveJson<T>(path: string, init?: RequestInit): Promise<T | n
   try {
     const res = await fetch(`${getApiBaseUrl()}${path}`, {
       ...init,
-      headers: { Accept: "application/json", ...init?.headers },
+      headers: {
+        Accept: "application/json",
+        ...inboxSessionHeaders(),
+        ...init?.headers,
+      },
     });
     if (!res.ok) return null;
     if (res.status === 204) return null;
@@ -160,6 +174,7 @@ async function fetchLiveOrMock<T>(
       headers: {
         Accept: "application/json",
         ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
+        ...inboxSessionHeaders(),
         ...headers,
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
@@ -574,6 +589,60 @@ export const api = {
       }
     );
     return body;
+  },
+
+  async getInboxSession(): Promise<InboxSessionInfo> {
+    if (!isBackendConfigured()) {
+      return { connected: false };
+    }
+    const raw = await fetchLiveJson<Record<string, unknown>>(ENDPOINTS.inboxSession);
+    return raw ? mapInboxSession(raw) : { connected: Boolean(getInboxSessionId()) };
+  },
+
+  async connectInbox(body: {
+    email: string;
+    appPassword: string;
+    provider: string;
+  }): Promise<InboxSessionInfo> {
+    if (!isBackendConfigured()) {
+      throw new Error("Backend not configured");
+    }
+    const res = await fetch(`${getApiBaseUrl()}${ENDPOINTS.inboxConnect}`, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        ...inboxSessionHeaders(),
+      },
+      body: JSON.stringify({
+        email: body.email,
+        app_password: body.appPassword,
+        provider: body.provider,
+      }),
+    });
+    const raw = (await res.json().catch(() => ({}))) as Record<string, unknown> & {
+      detail?: string;
+    };
+    if (!res.ok) {
+      throw new Error(
+        typeof raw.detail === "string"
+          ? raw.detail
+          : "Could not connect to that mailbox."
+      );
+    }
+    if (typeof raw.session_id === "string") {
+      setInboxSessionId(raw.session_id);
+    }
+    return mapInboxSession(raw);
+  },
+
+  async disconnectInbox(): Promise<void> {
+    if (!isBackendConfigured()) {
+      setInboxSessionId(null);
+      return;
+    }
+    await fetchLiveJson(ENDPOINTS.inboxDisconnect, { method: "POST" });
+    setInboxSessionId(null);
   },
 
   async getRecentInbox(limit = 8): Promise<RecentInboxResult> {

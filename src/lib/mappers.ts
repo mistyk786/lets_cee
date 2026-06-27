@@ -94,6 +94,7 @@ export function mapOverviewSummary(
     automationAvailable: available,
     automatableActions: workflow.automatable_actions ?? [],
     workflowCategory: workflow.workflow_category ?? "other",
+    detectedPatterns: workflow.detected_patterns ?? [],
   };
 }
 
@@ -128,7 +129,10 @@ export function mapDetectedWorkflowToOpportunity(
         workflow.occurrence_count > 0 ? Math.round(manualMinutes * 2) : 0,
       manualMinutesPerRun: Math.round(manualMinutes),
       patternConfidence: Math.min(workflow.opportunity_score / 100, 0.99),
-      examples: workflow.assumptions.slice(0, 3),
+      examples: (workflow.detected_patterns?.length
+        ? workflow.detected_patterns
+        : workflow.assumptions
+      ).slice(0, 5),
     },
     scores: {
       opportunityScore: Math.round(workflow.opportunity_score),

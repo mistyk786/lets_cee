@@ -41,6 +41,7 @@ export type BackendDetectedWorkflow = {
   workflow_category?: string;
   automation_summary?: string;
   automatable_actions?: string[];
+  detected_patterns?: string[];
 };
 
 export type BackendForecastMetrics = {
