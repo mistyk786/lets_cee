@@ -21,11 +21,13 @@ import type {
 import { fetchWithFallback, getApiBaseUrl, isBackendConfigured } from "./http";
 import {
   getInboxSessionId,
-  inboxSessionHeaders,
+  inboxRequestHeaders,
+  mapDemoInboxInfo,
   mapInboxSession,
   setInboxSessionId,
+  type DemoInboxInfo,
   type InboxSessionInfo,
-} from "./inboxSession";
+} from "./inboxMode";
 import {
   mapActivationResponse,
   mapDemoDataRaw,
@@ -147,7 +149,7 @@ async function fetchLiveJson<T>(path: string, init?: RequestInit): Promise<T | n
       ...init,
       headers: {
         Accept: "application/json",
-        ...inboxSessionHeaders(),
+        ...inboxRequestHeaders(),
         ...init?.headers,
       },
     });
@@ -174,7 +176,7 @@ async function fetchLiveOrMock<T>(
       headers: {
         Accept: "application/json",
         ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
-        ...inboxSessionHeaders(),
+        ...inboxRequestHeaders(),
         ...headers,
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
@@ -591,6 +593,14 @@ export const api = {
     return body;
   },
 
+  async getDemoInboxInfo(): Promise<DemoInboxInfo> {
+    if (!isBackendConfigured()) {
+      return { available: false };
+    }
+    const raw = await fetchLiveJson<Record<string, unknown>>(ENDPOINTS.ingestStatus);
+    return raw ? mapDemoInboxInfo(raw) : { available: false };
+  },
+
   async getInboxSession(): Promise<InboxSessionInfo> {
     if (!isBackendConfigured()) {
       return { connected: false };
@@ -612,7 +622,7 @@ export const api = {
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
-        ...inboxSessionHeaders(),
+        ...inboxRequestHeaders(),
       },
       body: JSON.stringify({
         email: body.email,

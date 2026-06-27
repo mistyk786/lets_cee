@@ -175,4 +175,6 @@ export type BackendIngestStatus = {
   uploaded_emails?: boolean;
   uploaded_calendar?: boolean;
   demo_available?: boolean;
+  demo_inbox_available?: boolean;
+  server_imap_email_masked?: string | null;
 };

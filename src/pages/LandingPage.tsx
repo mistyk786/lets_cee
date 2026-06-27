@@ -9,7 +9,9 @@ import {
   Lock,
   UserCheck,
   MailX,
+  User,
 } from "lucide-react";
+import { setInboxMode } from "@/lib/inboxMode";
 import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
 import { SectionLabel } from "@/components/ui/SectionLabel";
@@ -104,11 +106,28 @@ export function LandingPage() {
               animate="show"
               className="mt-8 flex flex-wrap items-center gap-3"
             >
-              <Button size="lg" onClick={() => navigate("/setup")}>
-                Optimise my inbox
+              <Button
+                size="lg"
+                onClick={() => {
+                  setInboxMode("demo");
+                  navigate("/setup?mode=demo");
+                }}
+              >
+                Try demo inbox
                 <ArrowRight size={18} />
               </Button>
-              <Button size="lg" variant="secondary" onClick={scrollToHow}>
+              <Button
+                size="lg"
+                variant="secondary"
+                onClick={() => {
+                  setInboxMode("own");
+                  navigate("/setup?mode=own");
+                }}
+              >
+                <User size={18} />
+                Use your email
+              </Button>
+              <Button size="lg" variant="ghost" onClick={scrollToHow}>
                 See How It Works
               </Button>
             </motion.div>
@@ -303,9 +322,12 @@ export function LandingPage() {
               <Button
                 size="lg"
                 variant="secondary"
-                onClick={() => navigate("/setup")}
+                onClick={() => {
+                  setInboxMode("demo");
+                  navigate("/setup?mode=demo");
+                }}
               >
-                Optimise my inbox
+                Try demo inbox
                 <ArrowRight size={18} />
               </Button>
             </div>

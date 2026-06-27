@@ -39,11 +39,24 @@ def clear_uploads() -> None:
     _uploaded_calendar = None
 
 
+def _mask_email(email: str) -> str:
+    local, _, domain = email.partition("@")
+    if not domain:
+        return email
+    visible = local[:2] if len(local) > 2 else local[:1]
+    return f"{visible}***@{domain}"
+
+
 def ingestion_status(settings: Settings | None = None) -> dict[str, Any]:
     active = settings or get_settings()
+    server_imap = imap_configured(active)
     return {
         "cursor_configured": active.cursor_configured,
-        "imap_configured": imap_configured(active),
+        "imap_configured": server_imap,
+        "demo_inbox_available": server_imap,
+        "server_imap_email_masked": (
+            _mask_email(active.imap_user) if server_imap and active.imap_user else None
+        ),
         "uploaded_emails": bool(_uploaded_emails),
         "uploaded_calendar": bool(_uploaded_calendar),
         "demo_available": True,

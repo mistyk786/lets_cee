@@ -25,7 +25,7 @@ export class ApiError extends Error {
   }
 }
 
-import { inboxSessionHeaders } from "./inboxSession";
+import { inboxRequestHeaders } from "./inboxMode";
 
 type FetchOptions<T> = Omit<RequestInit, "body"> & {
   body?: unknown;
@@ -52,7 +52,7 @@ export async function fetchWithFallback<T>(
     headers: {
       Accept: "application/json",
       ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
-      ...inboxSessionHeaders(),
+      ...inboxRequestHeaders(),
       ...headers,
     },
     body: body !== undefined ? JSON.stringify(body) : undefined,

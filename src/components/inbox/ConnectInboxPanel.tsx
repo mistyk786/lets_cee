@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, Loader2, Lock, Mail, Unplug } from "lucide-react";
 import { api } from "@/lib/api";
-import type { InboxSessionInfo } from "@/lib/inboxSession";
+import type { InboxSessionInfo } from "@/lib/inboxMode";
 import { Button } from "@/components/ui/Button";
 
 type Props = {

@@ -25,8 +25,12 @@ _settings = get_settings()
 
 @app.middleware("http")
 async def attach_inbox_session(request: Request, call_next):
+    mode = request.headers.get("x-sloth-inbox-mode", "demo").lower()
     session_id = request.headers.get(SESSION_HEADER)
-    set_effective_settings(settings_for_session(session_id))
+    if mode == "own" and session_id:
+        set_effective_settings(settings_for_session(session_id))
+    else:
+        set_effective_settings(None)
     try:
         return await call_next(request)
     finally:
