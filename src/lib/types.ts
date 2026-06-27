@@ -211,6 +211,20 @@ export type ActiveAutomation = {
   rules: AutomationRule;
 };
 
+/** Returned by POST /api/activate-automation (backend + mapped preview). */
+export type ActivationPreview = {
+  triggerLabel?: string;
+  draftReply?: string;
+  proposedSlots?: string[];
+  slotCount?: number;
+  tentativeEventTitle?: string;
+};
+
+export type ActivateAutomationResult = {
+  automation: ActiveAutomation;
+  preview?: ActivationPreview;
+};
+
 export type OverviewSummary = {
   workflowName: string;
   status: string;
