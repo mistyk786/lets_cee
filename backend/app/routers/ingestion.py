@@ -12,6 +12,19 @@ def ingest_status() -> dict:
     return ingestion_service.ingestion_status()
 
 
+@router.get("/api/inbox/recent")
+def recent_inbox(limit: int = 10) -> dict:
+    """Recent inbox messages for the dashboard (IMAP, upload, or demo)."""
+    emails, source = ingestion_service.list_recent_emails(
+        limit=min(max(limit, 1), 20)
+    )
+    return {
+        "data_source": source,
+        "count": len(emails),
+        "emails": emails,
+    }
+
+
 @router.post("/api/ingest/emails")
 def ingest_emails(emails: list[EmailMessage]) -> dict:
     """Upload exported or pasted emails as JSON (no Gmail OAuth required)."""

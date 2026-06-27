@@ -53,6 +53,7 @@ import type {
   OptimisationOpportunity,
   OverviewSummary,
   SlothNotification,
+  RecentInboxResult,
   WatcherStatus,
   WorkflowStep,
 } from "./types";
@@ -67,6 +68,7 @@ export const ENDPOINTS = {
   watcherStatus: "/api/watcher/status",
   watcherScan: "/api/watcher/scan",
   ingestStatus: "/api/ingest/status",
+  recentInbox: "/api/inbox/recent",
   opportunities: "/api/opportunities",
   opportunity: (id: string) => `/api/opportunities/${id}`,
   reviewOpportunity: (id: string) => `/api/opportunities/${id}/review`,
@@ -572,6 +574,36 @@ export const api = {
       }
     );
     return body;
+  },
+
+  async getRecentInbox(limit = 8): Promise<RecentInboxResult> {
+    if (!isBackendConfigured()) {
+      await mockDelay();
+      return { dataSource: "demo", count: 0, emails: [] };
+    }
+    const raw = await fetchLiveJson<{
+      data_source?: string;
+      count?: number;
+      emails?: Array<{
+        subject: string;
+        sender: string;
+        timestamp: string;
+        preview?: string | null;
+      }>;
+    }>(`${ENDPOINTS.recentInbox}?limit=${limit}`);
+    if (!raw) {
+      return { dataSource: "unknown", count: 0, emails: [] };
+    }
+    return {
+      dataSource: (raw.data_source ?? "unknown") as RecentInboxResult["dataSource"],
+      count: raw.count ?? 0,
+      emails: (raw.emails ?? []).map((e) => ({
+        subject: e.subject,
+        sender: e.sender,
+        timestamp: e.timestamp,
+        preview: e.preview ?? null,
+      })),
+    };
   },
 
   async getNotifications(): Promise<SlothNotification[]> {

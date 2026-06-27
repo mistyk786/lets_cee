@@ -16,6 +16,7 @@ import type { WatcherStatus } from "@/lib/types";
 import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
 import { WatcherStatusPanel } from "@/components/layout/WatcherStatusPanel";
+import { RecentInboxPanel } from "@/components/inbox/RecentInboxPanel";
 
 const ANALYSIS_STEPS = [
   "Reading recent inbox messages…",
@@ -122,10 +123,10 @@ export function SetupPage() {
             >
               <div className="text-center">
                 <p className="mb-3 font-mono text-[11px] uppercase tracking-label text-moss-600">
-                  {live ? "Live inbox analysis" : "Demo dataset"}
+                  {live ? "Live inbox analysis" : "Offline preview"}
                 </p>
                 <h1 className="font-display text-3xl font-medium tracking-tighter text-ink-900">
-                  Start the Sloth prototype
+                  Optimise your inbox
                 </h1>
                 <p className="mt-2 text-ink-500">
                   Sloth reads your recent email, finds repeatable work (meetings,
@@ -136,6 +137,8 @@ export function SetupPage() {
 
               <div className="mt-8 space-y-4">
                 <WatcherStatusPanel status={watcherStatus} compact />
+
+                {live && <RecentInboxPanel limit={8} />}
 
                 {watcherStatus?.initialScanDone && live && (
                   <div className="rounded-xl border border-moss-200 bg-moss-50 px-4 py-3 text-sm text-moss-800">
@@ -203,7 +206,7 @@ export function SetupPage() {
 
               <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
                 <Button size="lg" onClick={handleAnalyse}>
-                  Scan inbox &amp; analyse
+                  Scan &amp; optimise
                   <ArrowRight size={18} />
                 </Button>
                 {live && watcherStatus?.initialScanDone && (

@@ -108,6 +108,36 @@ def get_calendar_events(
     return events, "demo"
 
 
+def list_recent_emails(
+    *,
+    limit: int = 10,
+    prefer_live: bool = True,
+    settings: Settings | None = None,
+) -> tuple[list[dict[str, Any]], DataSource]:
+    """Return recent messages for the UI (newest first)."""
+    raw, source = get_raw_emails(
+        prefer_live=prefer_live,
+        settings=settings,
+    )
+
+    def _sort_key(email: dict[str, Any]) -> str:
+        return str(email.get("timestamp", ""))
+
+    sorted_emails = sorted(raw, key=_sort_key, reverse=True)
+    items: list[dict[str, Any]] = []
+    for email in sorted_emails[: max(1, min(limit, 20))]:
+        body = str(email.get("body", "")).replace("\n", " ").strip()
+        items.append(
+            {
+                "subject": str(email.get("subject") or "(no subject)"),
+                "sender": str(email.get("sender") or "Unknown sender"),
+                "timestamp": str(email.get("timestamp") or ""),
+                "preview": body[:140] if body else None,
+            }
+        )
+    return items, source
+
+
 def parse_ics_events(ics_text: str) -> list[dict[str, Any]]:
     """Minimal ICS parser for exported Google/Apple/Outlook calendars."""
     blocks = ics_text.replace("\r\n", "\n").split("BEGIN:VEVENT")

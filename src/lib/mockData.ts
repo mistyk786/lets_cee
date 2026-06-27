@@ -676,7 +676,7 @@ export const assistantInsights: AssistantInsight[] = [
     context: "landing",
     title: "SLOTH Assistant",
     message: "I found 3 workflows that may be worth optimising.",
-    suggestedActions: ["Use Demo Dataset", "See how it works"],
+    suggestedActions: ["Optimise my inbox", "See how it works"],
   },
   {
     id: "ai-setup",

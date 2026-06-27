@@ -10,6 +10,7 @@ import { api } from "@/lib/api";
 import { useApp } from "@/context/AppContext";
 import type { OverviewSummary } from "@/lib/types";
 import { WatcherStatusPanel } from "@/components/layout/WatcherStatusPanel";
+import { RecentInboxPanel } from "@/components/inbox/RecentInboxPanel";
 import { StepProgress } from "@/components/layout/StepProgress";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Badge } from "@/components/ui/Badge";
@@ -52,6 +53,8 @@ export function OverviewPage() {
       </div>
 
       <WatcherStatusPanel status={watcherStatus} />
+
+      {live && <RecentInboxPanel limit={6} compact />}
 
       {!summary ? (
         <Skeleton className="h-64 w-full" />

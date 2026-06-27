@@ -247,6 +247,19 @@ export type OverviewSummary = {
 
 export type DataSource = "demo" | "imap" | "upload" | "unknown";
 
+export type RecentEmail = {
+  subject: string;
+  sender: string;
+  timestamp: string;
+  preview: string | null;
+};
+
+export type RecentInboxResult = {
+  dataSource: DataSource;
+  count: number;
+  emails: RecentEmail[];
+};
+
 /** Live backend connection + inbox watcher state (GET /api/watcher/status). */
 export type WatcherStatus = {
   /** mock = VITE_USE_MOCK_API or no base URL; live = backend reachable; offline = configured but down */

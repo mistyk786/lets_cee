@@ -51,7 +51,7 @@ export function LandingPage() {
               How it works
             </Button>
             <Button size="sm" onClick={() => navigate("/setup")}>
-              Start prototype
+              Optimise inbox
             </Button>
           </div>
         </div>
@@ -105,7 +105,7 @@ export function LandingPage() {
               className="mt-8 flex flex-wrap items-center gap-3"
             >
               <Button size="lg" onClick={() => navigate("/setup")}>
-                Use Demo Dataset
+                Optimise my inbox
                 <ArrowRight size={18} />
               </Button>
               <Button size="lg" variant="secondary" onClick={scrollToHow}>
@@ -289,15 +289,15 @@ export function LandingPage() {
           />
           <div className="relative max-w-2xl">
             <span className="font-mono text-[11px] uppercase tracking-label text-moss-200">
-              Start the demo
+              Start optimising
             </span>
             <h2 className="mt-4 font-display text-3xl font-medium tracking-tighter sm:text-4xl">
               See where your week is really going.
             </h2>
             <p className="mt-3 max-w-xl text-moss-100">
-              Load the demo dataset and walk through the full detect → design →
-              optimise → measure journey. No accounts, no connections — just the
-              experience.
+              Connect your inbox, let Sloth find repeatable work, and get an
+              honest answer on what is worth automating — with your approval
+              every step of the way.
             </p>
             <div className="mt-8">
               <Button
@@ -305,7 +305,7 @@ export function LandingPage() {
                 variant="secondary"
                 onClick={() => navigate("/setup")}
               >
-                Use Demo Dataset
+                Optimise my inbox
                 <ArrowRight size={18} />
               </Button>
             </div>
