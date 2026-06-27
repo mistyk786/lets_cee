@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
+from app.schemas import AutomationRule
+
 
 class EmailMessage(BaseModel):
     """A single email within a scheduling thread."""
@@ -35,3 +37,43 @@ class DemoDataResponse(BaseModel):
 
     emails: list[EmailMessage]
     calendar_events: list[CalendarEvent]
+
+
+class TimeSlot(BaseModel):
+    """A proposed open meeting slot."""
+
+    start_time: str
+    end_time: str
+
+
+class TentativeEvent(BaseModel):
+    """A tentatively-created calendar event from an activation run."""
+
+    event_id: str
+    title: str
+    start_time: str
+    end_time: str
+    attendees: list[str]
+    status: str = "tentative"
+
+
+class AutomationRun(BaseModel):
+    """A logged record of one simulated automation run."""
+
+    run_id: str
+    activated_at: str
+    email_subject: str
+    proposed_slot_count: int
+    created_event_id: str | None = None
+    status: str
+
+
+class ActivationResponse(BaseModel):
+    """Result of activating the automation against one mock scheduling email."""
+
+    rules: AutomationRule
+    processed_email_subject: str
+    draft_reply: str
+    proposed_slots: list[TimeSlot]
+    tentative_event: TentativeEvent | None = None
+    run: AutomationRun
