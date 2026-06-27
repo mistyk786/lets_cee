@@ -13,10 +13,12 @@ import type {
   BackendDetectedWorkflow,
   BackendEffectivenessMetrics,
   BackendForecastMetrics,
+  BackendIngestStatus,
+  BackendWatcherStatus,
   BackendPrototypeBootstrapResponse,
   BackendWorkflowStep,
 } from "./backend/types";
-import { fetchWithFallback, isBackendConfigured } from "./http";
+import { fetchWithFallback, getApiBaseUrl, isBackendConfigured } from "./http";
 import {
   mapActivationResponse,
   mapDemoDataRaw,
@@ -25,7 +27,9 @@ import {
   mapForecast,
   mapNotificationItem,
   mapOverviewSummary,
+  mapWatcherStatus,
   mergeOpportunityWithMock,
+  mockWatcherStatus,
   toBackendAutomationRule,
 } from "./mappers";
 import {
@@ -50,6 +54,7 @@ import type {
   OptimisationOpportunity,
   OverviewSummary,
   SlothNotification,
+  WatcherStatus,
   WorkflowStep,
 } from "./types";
 
@@ -60,6 +65,8 @@ export const ENDPOINTS = {
   forecast: "/api/forecast",
   activateAutomation: "/api/activate-automation",
   effectiveness: "/api/effectiveness",
+  watcherStatus: "/api/watcher/status",
+  ingestStatus: "/api/ingest/status",
   opportunities: "/api/opportunities",
   opportunity: (id: string) => `/api/opportunities/${id}`,
   reviewOpportunity: (id: string) => `/api/opportunities/${id}/review`,
@@ -73,6 +80,11 @@ export const ENDPOINTS = {
 } as const;
 
 const LATENCY = 350;
+
+/** Default watcher poll interval for AppContext (15s). Override via VITE_WATCHER_POLL_MS. */
+export const WATCHER_POLL_MS = Number(
+  import.meta.env.VITE_WATCHER_POLL_MS ?? 15_000
+);
 
 let lastDetectedWorkflow: BackendDetectedWorkflow | null = null;
 
@@ -90,6 +102,37 @@ export const api = {
   isLive: () => isBackendConfigured(),
 
   getLastAnalysis: (): BackendDetectedWorkflow | null => lastDetectedWorkflow,
+
+  /**
+   * Poll GET /api/watcher/status (+ optional /api/ingest/status merge).
+   * Returns connectionMode "offline" when backend is configured but unreachable.
+   */
+  async getWatcherStatus(): Promise<WatcherStatus> {
+    if (!isBackendConfigured()) {
+      return mockWatcherStatus();
+    }
+
+    const base = getApiBaseUrl();
+    try {
+      const [watcherRes, ingestRes] = await Promise.all([
+        fetch(`${base}${ENDPOINTS.watcherStatus}`),
+        fetch(`${base}${ENDPOINTS.ingestStatus}`).catch(() => null),
+      ]);
+
+      if (!watcherRes.ok) {
+        return { ...mockWatcherStatus(), connectionMode: "offline" };
+      }
+
+      const watcher = (await watcherRes.json()) as BackendWatcherStatus;
+      let ingest: BackendIngestStatus | undefined;
+      if (ingestRes?.ok) {
+        ingest = (await ingestRes.json()) as BackendIngestStatus;
+      }
+      return mapWatcherStatus(watcher, ingest, "live");
+    } catch {
+      return { ...mockWatcherStatus(), connectionMode: "offline" };
+    }
+  },
 
   async getDemoData(): Promise<DemoDataset> {
     return fetchWithFallback<DemoDataset>(

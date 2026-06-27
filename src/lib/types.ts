@@ -241,3 +241,23 @@ export type OverviewSummary = {
     monthlyCoordinationHours: number;
   };
 };
+
+export type DataSource = "demo" | "imap" | "upload" | "unknown";
+
+/** Live backend connection + inbox watcher state (GET /api/watcher/status). */
+export type WatcherStatus = {
+  /** mock = VITE_USE_MOCK_API or no base URL; live = backend reachable; offline = configured but down */
+  connectionMode: "mock" | "live" | "offline";
+  dataSource: DataSource;
+  enabled: boolean;
+  running: boolean;
+  imapConfigured: boolean;
+  cursorConfigured: boolean;
+  pollIntervalSeconds: number;
+  lastScanAt: string | null;
+  nextScanAt: string | null;
+  lastError: string | null;
+  newMessages: number;
+  notificationCount: number;
+  workflowName: string | null;
+};

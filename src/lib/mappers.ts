@@ -11,6 +11,8 @@ import type {
   BackendDetectedWorkflow,
   BackendEffectivenessMetrics,
   BackendForecastMetrics,
+  BackendIngestStatus,
+  BackendWatcherStatus,
   BackendNotificationItem,
   BackendWorkflowStep,
 } from "./backend/types";
@@ -19,12 +21,14 @@ import type {
   ActiveAutomation,
   ApprovalMode,
   AutomationRule,
+  DataSource,
   DemoDataset,
   EffectivenessMetrics,
   Forecast,
   NodeKind,
   OptimisationOpportunity,
   OverviewSummary,
+  WatcherStatus,
   SlothNotification,
   WorkflowStep,
 } from "./types";
@@ -305,6 +309,59 @@ export function mapEffectiveness(
 
 function scaleScore(value: number, max: number): number {
   return Math.round((value / max) * 100);
+}
+
+// ---------------------------------------------------------------------------
+// Watcher / ingest status
+// ---------------------------------------------------------------------------
+
+export function mapWatcherStatus(
+  watcher: BackendWatcherStatus,
+  ingest?: BackendIngestStatus,
+  connectionMode: WatcherStatus["connectionMode"] = "live"
+): WatcherStatus {
+  const dataSource = (watcher.data_source ??
+    (ingest?.imap_configured
+      ? "imap"
+      : ingest?.uploaded_emails
+        ? "upload"
+        : "demo")) as DataSource;
+
+  return {
+    connectionMode,
+    dataSource: dataSource || "unknown",
+    enabled: watcher.enabled ?? true,
+    running: watcher.running ?? false,
+    imapConfigured:
+      watcher.imap_configured ?? ingest?.imap_configured ?? false,
+    cursorConfigured:
+      watcher.cursor_configured ?? ingest?.cursor_configured ?? false,
+    pollIntervalSeconds: watcher.poll_interval_seconds ?? 120,
+    lastScanAt: watcher.last_scan_at ?? null,
+    nextScanAt: watcher.next_scan_at ?? null,
+    lastError: watcher.last_error ?? null,
+    newMessages: watcher.new_messages ?? 0,
+    notificationCount: watcher.notification_count ?? 0,
+    workflowName: watcher.workflow_name ?? null,
+  };
+}
+
+export function mockWatcherStatus(): WatcherStatus {
+  return {
+    connectionMode: "mock",
+    dataSource: "demo",
+    enabled: false,
+    running: false,
+    imapConfigured: false,
+    cursorConfigured: false,
+    pollIntervalSeconds: 120,
+    lastScanAt: null,
+    nextScanAt: null,
+    lastError: null,
+    newMessages: 0,
+    notificationCount: 0,
+    workflowName: null,
+  };
 }
 
 // ---------------------------------------------------------------------------

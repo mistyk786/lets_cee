@@ -10,7 +10,9 @@ import {
   Sparkles,
 } from "lucide-react";
 import { api } from "@/lib/api";
+import { useApp } from "@/context/AppContext";
 import type { OverviewSummary } from "@/lib/types";
+import { WatcherStatusPanel } from "@/components/layout/WatcherStatusPanel";
 import { StepProgress } from "@/components/layout/StepProgress";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Badge } from "@/components/ui/Badge";
@@ -23,6 +25,7 @@ import { Skeleton } from "@/components/ui/LoadingState";
 
 export function OverviewPage() {
   const navigate = useNavigate();
+  const { watcherStatus } = useApp();
   const [summary, setSummary] = useState<OverviewSummary | null>(null);
 
   useEffect(() => {
@@ -49,6 +52,8 @@ export function OverviewPage() {
         </div>
         <StepProgress current="detect" />
       </div>
+
+      <WatcherStatusPanel status={watcherStatus} />
 
       {!summary ? (
         <Skeleton className="h-64 w-full" />

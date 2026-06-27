@@ -15,6 +15,7 @@ import { useApp } from "@/context/AppContext";
 import type { DemoDataset } from "@/lib/types";
 import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
+import { WatcherStatusPanel } from "@/components/layout/WatcherStatusPanel";
 
 const ANALYSIS_STEPS = [
   "Reading approved email and calendar activity…",
@@ -25,6 +26,7 @@ const ANALYSIS_STEPS = [
 
 export function SetupPage() {
   const navigate = useNavigate();
+  const { loadDemo, watcherStatus } = useApp();
   const { loadDemo, setNotifications } = useApp();
   const [dataset, setDataset] = useState<DemoDataset | null>(null);
   const [analysing, setAnalysing] = useState(false);
@@ -87,6 +89,8 @@ export function SetupPage() {
               </div>
 
               <div className="mt-8 space-y-4">
+                <WatcherStatusPanel status={watcherStatus} compact />
+
                 <div className="card p-5">
                   <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
                     Workflow selected

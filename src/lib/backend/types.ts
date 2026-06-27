@@ -131,3 +131,29 @@ export type BackendPrototypeBootstrapResponse = {
   notifications: BackendNotificationItem[];
   demo_mode: boolean;
 };
+
+/** GET /api/watcher/status — background inbox poll state. */
+export type BackendWatcherStatus = {
+  enabled?: boolean;
+  running?: boolean;
+  poll_interval_seconds?: number;
+  last_scan_at?: string | null;
+  next_scan_at?: string | null;
+  last_error?: string | null;
+  data_source?: "demo" | "imap" | "upload";
+  imap_configured?: boolean;
+  cursor_configured?: boolean;
+  demo_mode?: boolean;
+  new_messages?: number;
+  notification_count?: number;
+  workflow_name?: string | null;
+};
+
+/** GET /api/ingest/status — configured data sources. */
+export type BackendIngestStatus = {
+  cursor_configured?: boolean;
+  imap_configured?: boolean;
+  uploaded_emails?: boolean;
+  uploaded_calendar?: boolean;
+  demo_available?: boolean;
+};
