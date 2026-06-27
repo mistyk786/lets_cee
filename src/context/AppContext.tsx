@@ -6,11 +6,12 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { api } from "@/lib/api";
+import { api, WATCHER_POLL_MS } from "@/lib/api";
 import type {
   ActiveAutomation,
   AutomationRule,
   SlothNotification,
+  WatcherStatus,
 } from "@/lib/types";
 
 type AppState = {
@@ -36,6 +37,9 @@ type AppState = {
 
   commandPaletteOpen: boolean;
   setCommandPaletteOpen: (open: boolean | ((prev: boolean) => boolean)) => void;
+
+  watcherStatus: WatcherStatus | null;
+  refreshWatcherStatus: () => Promise<void>;
 };
 
 const AppContext = createContext<AppState | null>(null);
@@ -51,10 +55,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
   >({});
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [watcherStatus, setWatcherStatus] = useState<WatcherStatus | null>(
+    null
+  );
+
+  const refreshWatcherStatus = async () => {
+    const status = await api.getWatcherStatus();
+    setWatcherStatus(status);
+  };
 
   useEffect(() => {
     api.getNotifications().then(setNotifications);
     api.getActiveAutomations().then(setActiveAutomations);
+    void refreshWatcherStatus();
+    const interval = setInterval(() => void refreshWatcherStatus(), WATCHER_POLL_MS);
+    return () => clearInterval(interval);
   }, []);
 
   const markNotificationRead = (id: string) =>
@@ -90,6 +105,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setAssistantOpen,
       commandPaletteOpen,
       setCommandPaletteOpen,
+      watcherStatus,
+      refreshWatcherStatus,
     }),
     [
       demoLoaded,
@@ -98,6 +115,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       draftRules,
       assistantOpen,
       commandPaletteOpen,
+      watcherStatus,
     ]
   );
 
