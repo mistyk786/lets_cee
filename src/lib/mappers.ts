@@ -13,6 +13,7 @@ import type {
   BackendForecastMetrics,
   BackendIngestStatus,
   BackendWatcherStatus,
+  BackendNotificationItem,
   BackendWorkflowStep,
 } from "./backend/types";
 import type {
@@ -28,6 +29,7 @@ import type {
   OptimisationOpportunity,
   OverviewSummary,
   WatcherStatus,
+  SlothNotification,
   WorkflowStep,
 } from "./types";
 import { effectivenessMetrics as mockEffectiveness } from "./mockData";
@@ -373,15 +375,24 @@ export function mapActivationResponse(
   workflowName?: string
 ): ActivateAutomationResult {
   const slots = body.proposed_slots ?? [];
+  const slotLabels = slots.map((slot) =>
+    typeof slot === "string"
+      ? slot
+      : `${slot.start_time} → ${slot.end_time}`
+  );
+
   const automation: ActiveAutomation = {
-    id: body.run?.id ?? `auto-${opportunityId}`,
+    id: body.run?.run_id ?? body.run?.id ?? `auto-${opportunityId}`,
     opportunityId,
     name: workflowName
       ? `${capitalize(workflowName)} Assistant`
       : "Workflow Assistant",
     status: "active",
     approvalMode: rules.approvalMode,
-    activatedAt: body.run?.created_at ?? new Date().toISOString(),
+    activatedAt:
+      body.run?.activated_at ??
+      body.run?.created_at ??
+      new Date().toISOString(),
     runsCompleted: body.run?.status === "completed" ? 1 : 0,
     effectivenessScore: 0,
     estimatedMinutesSaved: 0,
@@ -393,13 +404,27 @@ export function mapActivationResponse(
     automation,
     preview: {
       draftReply: body.draft_reply,
-      proposedSlots: slots,
-      slotCount: slots.length,
+      proposedSlots: slotLabels,
+      slotCount: slotLabels.length,
       tentativeEventTitle: body.tentative_event?.title,
       triggerLabel: body.draft_reply
         ? "New scheduling email detected"
         : undefined,
     },
+  };
+}
+
+export function mapNotificationItem(item: BackendNotificationItem): SlothNotification {
+  return {
+    id: item.id,
+    title: item.title,
+    message: item.message,
+    createdAt: item.created_at,
+    read: item.read,
+    opportunityId: item.opportunity_id,
+    recoverableMinutesPerWeek: item.recoverable_minutes_per_week,
+    action: item.action,
+    status: item.status,
   };
 }
 

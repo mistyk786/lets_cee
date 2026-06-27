@@ -49,20 +49,22 @@ class SlothEngine:
 
     def health(self) -> HealthStatus:
         """Report readiness for deployment probes and upstream services."""
-        if self.settings.openai_configured:
+        if self.settings.cursor_configured:
             status = "ok"
-            message = "OpenAI configured. Live workflow extraction available."
+            message = "Cursor configured. Live workflow extraction available."
         else:
             status = "degraded"
             message = (
-                "OpenAI not configured. Engine will use demo fallback data."
+                "Cursor not configured. Engine will use demo fallback data."
             )
 
+        configured = self.settings.cursor_configured
         return HealthStatus(
             status=status,
             version=__version__,
             environment=self.settings.environment,
-            openai_configured=self.settings.openai_configured,
+            cursor_configured=configured,
+            openai_configured=configured,
             demo_available=True,
             message=message,
         )
@@ -75,6 +77,19 @@ class SlothEngine:
     ) -> DetectedWorkflow:
         """Detect a repeated workflow from raw email thread dicts."""
         return extract_workflow(
+            email_threads,
+            demo_mode=demo_mode,
+            settings=self.settings,
+        )
+
+    def detect_workflow_with_meta(
+        self,
+        email_threads: list[dict],
+        *,
+        demo_mode: bool = False,
+    ) -> tuple[DetectedWorkflow, bool]:
+        """Like ``detect_workflow`` but reports demo/fallback usage."""
+        return extract_workflow_with_meta(
             email_threads,
             demo_mode=demo_mode,
             settings=self.settings,

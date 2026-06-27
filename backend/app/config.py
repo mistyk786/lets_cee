@@ -2,38 +2,101 @@
 
 from __future__ import annotations
 
+import os
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from app.constants import DEFAULT_OPENAI_MAX_TOKENS, DEFAULT_OPENAI_MODEL
+from app.constants import (
+    DEFAULT_CURSOR_MODEL,
+    DEFAULT_CURSOR_POLL_INTERVAL_SECONDS,
+    DEFAULT_CURSOR_TIMEOUT_SECONDS,
+    DEFAULT_INBOX_POLL_INTERVAL_SECONDS,
+)
 
 
 class Settings(BaseSettings):
     """Environment-backed settings for deployment and local development."""
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(".env" if os.getenv("SLOTH_SKIP_ENV_FILE") != "1" else None),
         env_file_encoding="utf-8",
         extra="ignore",
         populate_by_name=True,
     )
 
+    cursor_api_key: str | None = Field(default=None, alias="CURSOR_API_KEY")
+    # Legacy alias — older docs used OPENAI_API_KEY; still accepted.
     openai_api_key: str | None = Field(default=None, alias="OPENAI_API_KEY")
-    openai_model: str = Field(default=DEFAULT_OPENAI_MODEL, alias="OPENAI_MODEL")
-    openai_max_tokens: int = Field(
-        default=DEFAULT_OPENAI_MAX_TOKENS,
-        alias="OPENAI_MAX_TOKENS",
-        ge=256,
-        le=8192,
+    cursor_model: str = Field(default=DEFAULT_CURSOR_MODEL, alias="CURSOR_MODEL")
+    cursor_timeout_seconds: int = Field(
+        default=DEFAULT_CURSOR_TIMEOUT_SECONDS,
+        alias="CURSOR_TIMEOUT_SECONDS",
+        ge=30,
+        le=600,
     )
+    cursor_poll_interval_seconds: float = Field(
+        default=DEFAULT_CURSOR_POLL_INTERVAL_SECONDS,
+        alias="CURSOR_POLL_INTERVAL_SECONDS",
+        ge=0.5,
+        le=30.0,
+    )
+
+    imap_host: str | None = Field(default=None, alias="IMAP_HOST")
+    imap_port: int = Field(default=993, alias="IMAP_PORT")
+    imap_user: str | None = Field(default=None, alias="IMAP_USER")
+    imap_password: str | None = Field(default=None, alias="IMAP_PASSWORD")
+    imap_mailbox: str = Field(default="INBOX", alias="IMAP_MAILBOX")
+    imap_max_messages: int = Field(default=80, alias="IMAP_MAX_MESSAGES", ge=10, le=500)
+
+    inbox_poll_enabled: bool = Field(default=True, alias="INBOX_POLL_ENABLED")
+    inbox_poll_interval_seconds: int = Field(
+        default=DEFAULT_INBOX_POLL_INTERVAL_SECONDS,
+        alias="INBOX_POLL_INTERVAL_SECONDS",
+        ge=30,
+        le=3600,
+    )
+
+    cors_origins: str | None = Field(
+        default=None,
+        alias="CORS_ORIGINS",
+        description="Comma-separated frontend origins for CORS (production deploy URL).",
+    )
+
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
     environment: str = Field(default="development", alias="SLOTH_ENV")
 
+    @model_validator(mode="after")
+    def _merge_legacy_api_key(self) -> Settings:
+        if not self.cursor_api_key and self.openai_api_key:
+            self.cursor_api_key = self.openai_api_key
+        # Gmail shows app passwords as "abcd efgh ijkl mnop"; IMAP wants no spaces.
+        if self.imap_password:
+            self.imap_password = self.imap_password.replace(" ", "")
+        return self
+
+    @property
+    def cursor_configured(self) -> bool:
+        return bool(self.cursor_api_key)
+
     @property
     def openai_configured(self) -> bool:
-        return bool(self.openai_api_key)
+        """Backward-compatible alias for ``cursor_configured``."""
+        return self.cursor_configured
+
+    def cors_origin_list(self) -> list[str]:
+        """Parse ``CORS_ORIGINS`` env var; fall back to local Vite dev ports."""
+        defaults = [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:5174",
+            "http://127.0.0.1:5174",
+        ]
+        if not self.cors_origins:
+            return defaults
+        extra = [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+        return list(dict.fromkeys(defaults + extra))
 
 
 @lru_cache

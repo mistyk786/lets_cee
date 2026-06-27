@@ -27,6 +27,7 @@ const ANALYSIS_STEPS = [
 export function SetupPage() {
   const navigate = useNavigate();
   const { loadDemo, watcherStatus } = useApp();
+  const { loadDemo, setNotifications } = useApp();
   const [dataset, setDataset] = useState<DemoDataset | null>(null);
   const [analysing, setAnalysing] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
@@ -46,7 +47,9 @@ export function SetupPage() {
   async function handleAnalyse() {
     setAnalysing(true);
     setStepIndex(0);
+    const boot = await api.bootstrapPrototype();
     await api.analyseWorkflow();
+    setNotifications(boot.notifications);
     loadDemo();
     navigate("/overview");
   }
@@ -76,11 +79,12 @@ export function SetupPage() {
                   Demo dataset
                 </p>
                 <h1 className="font-display text-3xl font-medium tracking-tighter text-ink-900">
-                  Analyse a workflow with the demo dataset
+                  Start the Sloth prototype
                 </h1>
                 <p className="mt-2 text-ink-500">
-                  We'll analyse a realistic, anonymised set of scheduling
-                  activity. No real accounts are connected.
+                  Sloth watches your inbox in the background (every 2 minutes).
+                  When it spots a repeated scheduling workflow, the bell
+                  lights up — one click to propose times and hold a calendar slot.
                 </p>
               </div>
 
@@ -163,7 +167,7 @@ export function SetupPage() {
 
               <div className="mt-8 flex justify-center">
                 <Button size="lg" onClick={handleAnalyse}>
-                  Analyse Workflow
+                  Scan inbox &amp; notify me
                   <ArrowRight size={18} />
                 </Button>
               </div>

@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -13,7 +12,6 @@ from app.services.workflow_service import (
     extract_workflow,
     extract_workflow_with_meta,
     MODEL,
-    MAX_TOKENS,
 )
 
 
@@ -31,38 +29,26 @@ def test_extract_workflow_falls_back_without_api_key():
     assert result.occurrence_count == 47
 
 
-def test_extract_workflow_parses_valid_openai_response():
+def test_extract_workflow_parses_valid_cursor_response():
     demo = load_demo_workflow()
-    mock_response = MagicMock()
-    mock_response.choices = [
-        MagicMock(message=MagicMock(content=json.dumps(demo.model_dump())))
-    ]
-    mock_client = MagicMock()
-    mock_client.chat.completions.create.return_value = mock_response
 
-    with patch("openai.OpenAI", return_value=mock_client):
-        with patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"}):
+    with patch(
+        "app.services.workflow_service.complete_json_prompt",
+        return_value=demo.model_dump(),
+    ):
+        with patch.dict("os.environ", {"CURSOR_API_KEY": "test-key"}):
             result = extract_workflow([{"subject": "Q4 planning"}])
 
     assert result.workflow_name == demo.workflow_name
     assert result.occurrence_count == demo.occurrence_count
-    mock_client.chat.completions.create.assert_called_once()
-    call_kwargs = mock_client.chat.completions.create.call_args.kwargs
-    assert call_kwargs["model"] == MODEL
-    assert call_kwargs["max_tokens"] == MAX_TOKENS
-    assert call_kwargs["response_format"] == {"type": "json_object"}
 
 
 def test_extract_workflow_falls_back_on_invalid_json():
-    mock_response = MagicMock()
-    mock_response.choices = [
-        MagicMock(message=MagicMock(content="Sorry, I cannot help with that."))
-    ]
-    mock_client = MagicMock()
-    mock_client.chat.completions.create.return_value = mock_response
-
-    with patch("openai.OpenAI", return_value=mock_client):
-        with patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"}):
+    with patch(
+        "app.services.workflow_service.complete_json_prompt",
+        side_effect=ValueError("bad json"),
+    ):
+        with patch.dict("os.environ", {"CURSOR_API_KEY": "test-key"}):
             result = extract_workflow([{"subject": "test"}])
 
     assert result.occurrence_count == 47
@@ -71,15 +57,12 @@ def test_extract_workflow_falls_back_on_invalid_json():
 def test_extract_workflow_overrides_llm_proposal_with_rules():
     demo = load_demo_workflow()
     payload = demo.model_copy(update={"automation_proposal": []}).model_dump()
-    mock_response = MagicMock()
-    mock_response.choices = [
-        MagicMock(message=MagicMock(content=json.dumps(payload)))
-    ]
-    mock_client = MagicMock()
-    mock_client.chat.completions.create.return_value = mock_response
 
-    with patch("openai.OpenAI", return_value=mock_client):
-        with patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"}):
+    with patch(
+        "app.services.workflow_service.complete_json_prompt",
+        return_value=payload,
+    ):
+        with patch.dict("os.environ", {"CURSOR_API_KEY": "test-key"}):
             result = extract_workflow([{"subject": "Q4 planning"}])
 
     assert len(result.automation_proposal) == 7
@@ -87,10 +70,12 @@ def test_extract_workflow_overrides_llm_proposal_with_rules():
     assert result.automation_proposal[-1].is_manual is True
 
 
-def test_extract_workflow_demo_mode_skips_openai():
-    with patch("openai.OpenAI") as mock_openai:
+def test_extract_workflow_demo_mode_skips_cursor():
+    with patch(
+        "app.services.workflow_service.complete_json_prompt"
+    ) as mock_cursor:
         result = extract_workflow([], demo_mode=True)
-    mock_openai.assert_not_called()
+    mock_cursor.assert_not_called()
     assert result.occurrence_count == 47
 
 
@@ -101,7 +86,6 @@ def test_extract_workflow_with_meta_reports_demo_mode():
 
 
 def test_extract_workflow_with_meta_reports_fallback():
-    # No key configured -> fallback -> used_demo True.
     workflow, used_demo = extract_workflow_with_meta([{"subject": "x"}])
     assert used_demo is True
     assert workflow.workflow_name == "Email-to-Calendar Meeting Scheduling"
@@ -109,15 +93,12 @@ def test_extract_workflow_with_meta_reports_fallback():
 
 def test_extract_workflow_with_meta_reports_live_success():
     demo = load_demo_workflow()
-    mock_response = MagicMock()
-    mock_response.choices = [
-        MagicMock(message=MagicMock(content=json.dumps(demo.model_dump())))
-    ]
-    mock_client = MagicMock()
-    mock_client.chat.completions.create.return_value = mock_response
 
-    with patch("openai.OpenAI", return_value=mock_client):
-        with patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"}):
+    with patch(
+        "app.services.workflow_service.complete_json_prompt",
+        return_value=demo.model_dump(),
+    ):
+        with patch.dict("os.environ", {"CURSOR_API_KEY": "test-key"}):
             workflow, used_demo = extract_workflow_with_meta([{"subject": "x"}])
 
     assert used_demo is False
@@ -125,13 +106,15 @@ def test_extract_workflow_with_meta_reports_live_success():
 
 
 def test_extract_workflow_falls_back_on_empty_content():
-    mock_response = MagicMock()
-    mock_response.choices = [MagicMock(message=MagicMock(content=""))]
-    mock_client = MagicMock()
-    mock_client.chat.completions.create.return_value = mock_response
-
-    with patch("openai.OpenAI", return_value=mock_client):
-        with patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"}):
+    with patch(
+        "app.services.workflow_service.complete_json_prompt",
+        side_effect=ValueError("Cursor returned empty content"),
+    ):
+        with patch.dict("os.environ", {"CURSOR_API_KEY": "test-key"}):
             result = extract_workflow([{"subject": "test"}])
 
     assert result.opportunity_score == 78.5
+
+
+def test_model_constant_is_cursor_default():
+    assert MODEL == "composer-2.5"

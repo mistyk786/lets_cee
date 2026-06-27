@@ -8,12 +8,14 @@
 
 import type {
   BackendActivationResponse,
+  BackendAutomateNotificationResponse,
   BackendDemoDataRaw,
   BackendDetectedWorkflow,
   BackendEffectivenessMetrics,
   BackendForecastMetrics,
   BackendIngestStatus,
   BackendWatcherStatus,
+  BackendPrototypeBootstrapResponse,
   BackendWorkflowStep,
 } from "./backend/types";
 import { fetchWithFallback, getApiBaseUrl, isBackendConfigured } from "./http";
@@ -23,6 +25,7 @@ import {
   mapDetectedWorkflowToOpportunity,
   mapEffectiveness,
   mapForecast,
+  mapNotificationItem,
   mapOverviewSummary,
   mapWatcherStatus,
   mergeOpportunityWithMock,
@@ -72,6 +75,8 @@ export const ENDPOINTS = {
   pauseOpportunity: (id: string) => `/api/opportunities/${id}/pause`,
   opportunityMetrics: (id: string) => `/api/opportunities/${id}/metrics`,
   notifications: "/api/notifications",
+  automateNotification: (id: string) => `/api/notifications/${id}/automate`,
+  prototypeBootstrap: "/api/prototype/bootstrap",
 } as const;
 
 const LATENCY = 350;
@@ -355,9 +360,99 @@ export const api = {
     );
   },
 
+  async bootstrapPrototype(): Promise<{
+    workflowName: string;
+    opportunityScore: number;
+    notifications: SlothNotification[];
+  }> {
+    return fetchWithFallback(
+      ENDPOINTS.prototypeBootstrap,
+      async () => {
+        await mockDelay(800);
+        return {
+          workflowName: overviewSummary.workflowName,
+          opportunityScore: overviewSummary.opportunityScore,
+          notifications: clone(notifications),
+        };
+      },
+      {
+        method: "POST",
+        body: {},
+        map: (raw) => {
+          const body = raw as BackendPrototypeBootstrapResponse;
+          return {
+            workflowName: body.workflow_name,
+            opportunityScore: body.opportunity_score,
+            notifications: body.notifications.map(mapNotificationItem),
+          };
+        },
+      }
+    );
+  },
+
   async getNotifications(): Promise<SlothNotification[]> {
-    await mockDelay();
-    return clone(notifications);
+    return fetchWithFallback<SlothNotification[]>(
+      ENDPOINTS.notifications,
+      async () => {
+        await mockDelay();
+        return clone(notifications);
+      },
+      {
+        map: (raw) =>
+          (raw as BackendPrototypeBootstrapResponse["notifications"]).map(
+            mapNotificationItem
+          ),
+      }
+    );
+  },
+
+  async automateNotification(
+    notificationId: string,
+    opportunityId: string,
+    rules: AutomationRule
+  ): Promise<ActivateAutomationResult> {
+    const mockOpp = opportunities.find((o) => o.id === opportunityId);
+
+    return fetchWithFallback<ActivateAutomationResult>(
+      ENDPOINTS.automateNotification(notificationId),
+      async () => {
+        await mockDelay(900);
+        return {
+          automation: {
+            id: `auto-${opportunityId}`,
+            opportunityId,
+            name: `${mockOpp?.workflowName ?? "Workflow"} Assistant`,
+            status: "active",
+            approvalMode: rules.approvalMode,
+            activatedAt: new Date().toISOString(),
+            runsCompleted: 1,
+            effectivenessScore: 0,
+            estimatedMinutesSaved: 12,
+            lastActivity: new Date().toISOString(),
+            rules,
+          },
+          preview: {
+            triggerLabel: "New scheduling email detected",
+            draftReply:
+              "Hi,\n\nThanks for the note. Here are a few times that work:\n- Tue 10:00\n\nBest,",
+            proposedSlots: ["Tue 10:00 → 10:30"],
+            slotCount: 1,
+            tentativeEventTitle: "Quick sync next week?",
+          },
+        };
+      },
+      {
+        method: "POST",
+        body: {},
+        map: (raw) =>
+          mapActivationResponse(
+            (raw as BackendAutomateNotificationResponse).activation,
+            opportunityId,
+            rules,
+            mockOpp?.workflowName ?? lastDetectedWorkflow?.workflow_name
+          ),
+      }
+    );
   },
 
   getAssistantInsight(context: AssistantContext): AssistantInsight | undefined {

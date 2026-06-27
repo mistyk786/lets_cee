@@ -184,6 +184,9 @@ export type SlothNotification = {
   read: boolean;
   opportunityId?: string;
   recoverableMinutesPerWeek?: number;
+  /** Prototype: one-click automation vs dashboard review. */
+  action?: "automate" | "review";
+  status?: "pending" | "completed";
 };
 
 export type DemoDataset = {
