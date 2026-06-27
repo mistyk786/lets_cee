@@ -7,7 +7,6 @@ import {
   type ReactNode,
 } from "react";
 import { api, WATCHER_POLL_MS } from "@/lib/api";
-import { api } from "@/lib/api";
 import { isBackendConfigured } from "@/lib/http";
 import type {
   ActiveAutomation,

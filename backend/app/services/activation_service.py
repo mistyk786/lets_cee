@@ -49,6 +49,43 @@ def _default_rules() -> AutomationRule:
     return load_demo_workflow().automation_rules
 
 
+def _parse_iso(value: str) -> datetime:
+    dt = datetime.fromisoformat(value)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
+def _format_display_time(dt: datetime) -> str:
+    """Human-readable local time, e.g. ``29/6/2026 9:00am``."""
+    local = dt.astimezone()
+    hour = local.hour
+    minute = local.minute
+    period = "am" if hour < 12 else "pm"
+    hour12 = hour % 12 or 12
+    time_part = f"{hour12}{period}" if minute == 0 else f"{hour12}:{minute:02d}{period}"
+    return f"{local.day}/{local.month}/{local.year} {time_part}"
+
+
+def _format_slot_range(start: str, end: str) -> str:
+    """Readable slot line, e.g. ``29/6/2026 9:00am to 9:30am``."""
+    start_local = _parse_iso(start).astimezone()
+    end_local = _parse_iso(end).astimezone()
+    start_label = _format_display_time(start_local)
+    if start_local.date() == end_local.date():
+        end_time = end_local.hour
+        end_minute = end_local.minute
+        end_period = "am" if end_time < 12 else "pm"
+        end_hour12 = end_time % 12 or 12
+        end_part = (
+            f"{end_hour12}{end_period}"
+            if end_minute == 0
+            else f"{end_hour12}:{end_minute:02d}{end_period}"
+        )
+        return f"{start_label} to {end_part}"
+    return f"{start_label} to {_format_display_time(end_local)}"
+
+
 def _busy_events() -> list[dict[str, str]]:
     events_raw, _source = ingestion_service.get_calendar_events(prefer_live=True)
     events = [
@@ -70,7 +107,7 @@ def _draft_reply(sender: str, slots: list[TimeSlot]) -> str:
             "Best,"
         )
     lines = ["Hi,", "", "Thanks for the note. Here are a few times that work:"]
-    lines.extend(f"- {s.start_time} to {s.end_time}" for s in slots)
+    lines.extend(f"- {_format_slot_range(s.start_time, s.end_time)}" for s in slots)
     lines.extend(
         ["", "Let me know which suits you and I'll send an invite.", "", "Best,"]
     )

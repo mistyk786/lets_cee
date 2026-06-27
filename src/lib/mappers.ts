@@ -33,6 +33,7 @@ import type {
   WorkflowStep,
 } from "./types";
 import { effectivenessMetrics as mockEffectiveness } from "./mockData";
+import { formatSlotRange } from "./utils";
 
 // ---------------------------------------------------------------------------
 // Demo data
@@ -378,7 +379,7 @@ export function mapActivationResponse(
   const slotLabels = slots.map((slot) =>
     typeof slot === "string"
       ? slot
-      : `${slot.start_time} → ${slot.end_time}`
+      : formatSlotRange(slot.start_time, slot.end_time)
   );
 
   const automation: ActiveAutomation = {
