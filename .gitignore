@@ -25,3 +25,19 @@ venv/
 .DS_Store
 .idea/
 .vscode/
+node_modules
+dist
+dist-ssr
+*.local
+.vite
+
+# Editor / OS
+.DS_Store
+.idea
+.vscode/*
+!.vscode/extensions.json
+*.log
+npm-debug.log*
+
+# TS build info
+*.tsbuildinfo

@@ -1,0 +1,142 @@
+[
+  {
+    "event_id": "evt-001",
+    "title": "Q3 Roadmap Kickoff",
+    "start_time": "2026-06-02T10:00:00+00:00",
+    "end_time": "2026-06-02T10:45:00+00:00",
+    "attendees": ["priya.nair@northwind.io", "daniel.okafor@northwind.io"]
+  },
+  {
+    "event_id": "evt-002",
+    "title": "Onboarding Flow Design Review",
+    "start_time": "2026-06-04T15:30:00+00:00",
+    "end_time": "2026-06-04T16:00:00+00:00",
+    "attendees": ["mei.lin@brightleaf.com", "carlos.mendez@brightleaf.com"]
+  },
+  {
+    "event_id": "evt-003",
+    "title": "H2 Budget Planning Call",
+    "start_time": "2026-06-10T11:00:00+00:00",
+    "end_time": "2026-06-10T12:00:00+00:00",
+    "attendees": ["anna.kowalski@finhub.co", "tom.becker@finhub.co", "finance.ops@finhub.co"]
+  },
+  {
+    "event_id": "evt-004",
+    "title": "1:1 Catch-up: Sofia & James",
+    "start_time": "2026-06-05T09:30:00+00:00",
+    "end_time": "2026-06-05T10:00:00+00:00",
+    "attendees": ["sofia.rossi@helixlabs.dev", "james.patel@helixlabs.dev"]
+  },
+  {
+    "event_id": "evt-005",
+    "title": "Analytics Vendor Demo",
+    "start_time": "2026-06-11T10:00:00+00:00",
+    "end_time": "2026-06-11T11:00:00+00:00",
+    "attendees": ["hannah.schmidt@orbital.io", "raj.gupta@orbital.io", "sales@datavista.io"]
+  },
+  {
+    "event_id": "evt-006",
+    "title": "Sprint Retrospective",
+    "start_time": "2026-06-12T14:00:00+00:00",
+    "end_time": "2026-06-12T15:00:00+00:00",
+    "attendees": ["lucas.fontaine@codecanvas.app", "emma.wright@codecanvas.app", "team-eng@codecanvas.app"]
+  },
+  {
+    "event_id": "evt-007",
+    "title": "Quarterly Customer Check-in",
+    "start_time": "2026-06-11T15:00:00+00:00",
+    "end_time": "2026-06-11T15:45:00+00:00",
+    "attendees": ["olivia.brooks@summitcrm.com", "noah.williams@acme-corp.com"]
+  },
+  {
+    "event_id": "evt-008",
+    "title": "Service Mesh Migration Sync",
+    "start_time": "2026-06-11T09:00:00+00:00",
+    "end_time": "2026-06-11T10:00:00+00:00",
+    "attendees": ["yuki.tanaka@dataloop.tech", "aisha.rahman@dataloop.tech"]
+  },
+  {
+    "event_id": "evt-009",
+    "title": "Autumn Campaign Planning",
+    "start_time": "2026-06-10T13:30:00+00:00",
+    "end_time": "2026-06-10T15:00:00+00:00",
+    "attendees": ["grace.lee@vividmedia.co", "felix.wagner@vividmedia.co"]
+  },
+  {
+    "event_id": "evt-010",
+    "title": "New Hire First-Week Alignment",
+    "start_time": "2026-06-19T11:00:00+00:00",
+    "end_time": "2026-06-19T11:30:00+00:00",
+    "attendees": ["david.cohen@pinemark.org", "laura.jensen@pinemark.org"]
+  },
+  {
+    "event_id": "evt-011",
+    "title": "Partnership Intro Call",
+    "start_time": "2026-06-18T10:00:00+00:00",
+    "end_time": "2026-06-18T10:30:00+00:00",
+    "attendees": ["isabella.moreau@greenscale.eu", "marcus.hale@brightleaf.com"]
+  },
+  {
+    "event_id": "evt-012",
+    "title": "Mid-Year Performance Review: Nina",
+    "start_time": "2026-06-23T10:30:00+00:00",
+    "end_time": "2026-06-23T11:30:00+00:00",
+    "attendees": ["robert.king@helixlabs.dev", "nina.petrova@helixlabs.dev"]
+  },
+  {
+    "event_id": "evt-013",
+    "title": "Product Launch Dry Run",
+    "start_time": "2026-06-19T09:30:00+00:00",
+    "end_time": "2026-06-19T10:30:00+00:00",
+    "attendees": ["chloe.martin@orbital.io", "sam.turner@orbital.io", "team-launch@orbital.io"]
+  },
+  {
+    "event_id": "evt-014",
+    "title": "MSA Legal Contract Review",
+    "start_time": "2026-06-25T11:00:00+00:00",
+    "end_time": "2026-06-25T11:45:00+00:00",
+    "attendees": ["victor.alvarez@finhub.co", "helen.park@finhub.co"]
+  },
+  {
+    "event_id": "evt-015",
+    "title": "All-Hands Rehearsal",
+    "start_time": "2026-06-19T16:00:00+00:00",
+    "end_time": "2026-06-19T16:45:00+00:00",
+    "attendees": ["maya.singh@codecanvas.app", "oliver.bennett@codecanvas.app"]
+  },
+  {
+    "event_id": "evt-016",
+    "title": "Weekly Engineering Standup",
+    "start_time": "2026-06-22T09:15:00+00:00",
+    "end_time": "2026-06-22T09:45:00+00:00",
+    "attendees": ["yuki.tanaka@dataloop.tech", "aisha.rahman@dataloop.tech", "team-eng@dataloop.tech"]
+  },
+  {
+    "event_id": "evt-017",
+    "title": "Board Meeting Prep",
+    "start_time": "2026-06-24T14:00:00+00:00",
+    "end_time": "2026-06-24T15:30:00+00:00",
+    "attendees": ["anna.kowalski@finhub.co", "tom.becker@finhub.co", "victor.alvarez@finhub.co"]
+  },
+  {
+    "event_id": "evt-018",
+    "title": "Design System Working Session",
+    "start_time": "2026-06-23T13:00:00+00:00",
+    "end_time": "2026-06-23T14:00:00+00:00",
+    "attendees": ["mei.lin@brightleaf.com", "carlos.mendez@brightleaf.com", "marcus.hale@brightleaf.com"]
+  },
+  {
+    "event_id": "evt-019",
+    "title": "Customer Feedback Synthesis",
+    "start_time": "2026-06-26T15:00:00+00:00",
+    "end_time": "2026-06-26T16:00:00+00:00",
+    "attendees": ["olivia.brooks@summitcrm.com", "grace.lee@vividmedia.co"]
+  },
+  {
+    "event_id": "evt-020",
+    "title": "Friday Team Demo",
+    "start_time": "2026-06-26T16:30:00+00:00",
+    "end_time": "2026-06-26T17:00:00+00:00",
+    "attendees": ["lucas.fontaine@codecanvas.app", "emma.wright@codecanvas.app", "maya.singh@codecanvas.app", "oliver.bennett@codecanvas.app"]
+  }
+]

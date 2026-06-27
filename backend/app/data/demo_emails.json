@@ -1,0 +1,482 @@
+[
+  {
+    "thread_id": "thread-001",
+    "subject": "Kickoff sync for Q3 roadmap",
+    "sender": "Priya Nair <priya.nair@northwind.io>",
+    "recipient": "Daniel Okafor <daniel.okafor@northwind.io>",
+    "timestamp": "2026-06-01T09:14:00+00:00",
+    "body": "Hi Daniel, I'd like to set up a kickoff to align on the Q3 roadmap. Do you have 45 minutes sometime this week? Mornings work best for me."
+  },
+  {
+    "thread_id": "thread-001",
+    "subject": "Re: Kickoff sync for Q3 roadmap",
+    "sender": "Daniel Okafor <daniel.okafor@northwind.io>",
+    "recipient": "Priya Nair <priya.nair@northwind.io>",
+    "timestamp": "2026-06-01T10:02:00+00:00",
+    "body": "Hi Priya, happy to. Tuesday or Wednesday morning is open for me. I'm booked solid Thursday. Would 10:00 Tuesday work?"
+  },
+  {
+    "thread_id": "thread-001",
+    "subject": "Re: Kickoff sync for Q3 roadmap",
+    "sender": "Priya Nair <priya.nair@northwind.io>",
+    "recipient": "Daniel Okafor <daniel.okafor@northwind.io>",
+    "timestamp": "2026-06-01T10:20:00+00:00",
+    "body": "Tuesday at 10:00 is perfect. I'll send an invite with a Zoom link. Thanks!"
+  },
+  {
+    "thread_id": "thread-001",
+    "subject": "Re: Kickoff sync for Q3 roadmap",
+    "sender": "Daniel Okafor <daniel.okafor@northwind.io>",
+    "recipient": "Priya Nair <priya.nair@northwind.io>",
+    "timestamp": "2026-06-01T10:25:00+00:00",
+    "body": "Confirmed, see you Tuesday at 10:00. I'll bring the draft roadmap doc."
+  },
+  {
+    "thread_id": "thread-002",
+    "subject": "Design review for onboarding flow",
+    "sender": "Mei Lin <mei.lin@brightleaf.com>",
+    "recipient": "Carlos Mendez <carlos.mendez@brightleaf.com>",
+    "timestamp": "2026-06-02T13:40:00+00:00",
+    "body": "Carlos, can we grab 30 minutes to review the new onboarding screens? Ideally before the sprint ends Friday."
+  },
+  {
+    "thread_id": "thread-002",
+    "subject": "Re: Design review for onboarding flow",
+    "sender": "Carlos Mendez <carlos.mendez@brightleaf.com>",
+    "recipient": "Mei Lin <mei.lin@brightleaf.com>",
+    "timestamp": "2026-06-02T14:11:00+00:00",
+    "body": "Sure. Thursday afternoon is wide open for me. How about 15:00?"
+  },
+  {
+    "thread_id": "thread-002",
+    "subject": "Re: Design review for onboarding flow",
+    "sender": "Mei Lin <mei.lin@brightleaf.com>",
+    "recipient": "Carlos Mendez <carlos.mendez@brightleaf.com>",
+    "timestamp": "2026-06-02T14:33:00+00:00",
+    "body": "15:00 Thursday works. Could we make it a touch later, say 15:30? I have a standup that sometimes runs over."
+  },
+  {
+    "thread_id": "thread-002",
+    "subject": "Re: Design review for onboarding flow",
+    "sender": "Carlos Mendez <carlos.mendez@brightleaf.com>",
+    "recipient": "Mei Lin <mei.lin@brightleaf.com>",
+    "timestamp": "2026-06-02T14:40:00+00:00",
+    "body": "15:30 Thursday it is. Confirmed. I'll book the small conference room."
+  },
+  {
+    "thread_id": "thread-003",
+    "subject": "Budget planning call",
+    "sender": "Anna Kowalski <anna.kowalski@finhub.co>",
+    "recipient": "Tom Becker <tom.becker@finhub.co>",
+    "timestamp": "2026-06-03T08:05:00+00:00",
+    "body": "Hi Tom, we need to lock the H2 budget numbers. Can you do a one-hour call early next week?"
+  },
+  {
+    "thread_id": "thread-003",
+    "subject": "Re: Budget planning call",
+    "sender": "Tom Becker <tom.becker@finhub.co>",
+    "recipient": "Anna Kowalski <anna.kowalski@finhub.co>",
+    "timestamp": "2026-06-03T09:30:00+00:00",
+    "body": "Monday I'm traveling, but Tuesday or Wednesday I'm flexible. Do you have a preference?"
+  },
+  {
+    "thread_id": "thread-003",
+    "subject": "Re: Budget planning call",
+    "sender": "Anna Kowalski <anna.kowalski@finhub.co>",
+    "recipient": "Tom Becker <tom.becker@finhub.co>",
+    "timestamp": "2026-06-03T09:52:00+00:00",
+    "body": "Let's do Wednesday at 11:00 then. I'll loop in finance ops as optional."
+  },
+  {
+    "thread_id": "thread-003",
+    "subject": "Re: Budget planning call",
+    "sender": "Tom Becker <tom.becker@finhub.co>",
+    "recipient": "Anna Kowalski <anna.kowalski@finhub.co>",
+    "timestamp": "2026-06-03T10:10:00+00:00",
+    "body": "Wednesday 11:00 confirmed. Talk then."
+  },
+  {
+    "thread_id": "thread-004",
+    "subject": "1:1 catch-up",
+    "sender": "Sofia Rossi <sofia.rossi@helixlabs.dev>",
+    "recipient": "James Patel <james.patel@helixlabs.dev>",
+    "timestamp": "2026-06-04T15:20:00+00:00",
+    "body": "James, it's been a while since our last 1:1. Can we find 30 minutes this week to catch up?"
+  },
+  {
+    "thread_id": "thread-004",
+    "subject": "Re: 1:1 catch-up",
+    "sender": "James Patel <james.patel@helixlabs.dev>",
+    "recipient": "Sofia Rossi <sofia.rossi@helixlabs.dev>",
+    "timestamp": "2026-06-04T16:00:00+00:00",
+    "body": "Absolutely. I'm free Friday morning or late afternoon. What suits you?"
+  },
+  {
+    "thread_id": "thread-004",
+    "subject": "Re: 1:1 catch-up",
+    "sender": "Sofia Rossi <sofia.rossi@helixlabs.dev>",
+    "recipient": "James Patel <james.patel@helixlabs.dev>",
+    "timestamp": "2026-06-04T16:18:00+00:00",
+    "body": "Friday at 09:30 works great for me."
+  },
+  {
+    "thread_id": "thread-004",
+    "subject": "Re: 1:1 catch-up",
+    "sender": "James Patel <james.patel@helixlabs.dev>",
+    "recipient": "Sofia Rossi <sofia.rossi@helixlabs.dev>",
+    "timestamp": "2026-06-04T16:24:00+00:00",
+    "body": "Confirmed for Friday 09:30. See you then."
+  },
+  {
+    "thread_id": "thread-005",
+    "subject": "Vendor demo scheduling",
+    "sender": "Hannah Schmidt <hannah.schmidt@orbital.io>",
+    "recipient": "Raj Gupta <raj.gupta@orbital.io>",
+    "timestamp": "2026-06-05T11:00:00+00:00",
+    "body": "Raj, the analytics vendor wants to demo their platform. Can we host them for an hour next week?"
+  },
+  {
+    "thread_id": "thread-005",
+    "subject": "Re: Vendor demo scheduling",
+    "sender": "Raj Gupta <raj.gupta@orbital.io>",
+    "recipient": "Hannah Schmidt <hannah.schmidt@orbital.io>",
+    "timestamp": "2026-06-05T12:15:00+00:00",
+    "body": "Next week is tight. Monday afternoon or Thursday morning are the only gaps I have."
+  },
+  {
+    "thread_id": "thread-005",
+    "subject": "Re: Vendor demo scheduling",
+    "sender": "Hannah Schmidt <hannah.schmidt@orbital.io>",
+    "recipient": "Raj Gupta <raj.gupta@orbital.io>",
+    "timestamp": "2026-06-05T13:02:00+00:00",
+    "body": "Thursday morning is better for the vendor. Let's say 10:00 Thursday."
+  },
+  {
+    "thread_id": "thread-005",
+    "subject": "Re: Vendor demo scheduling",
+    "sender": "Raj Gupta <raj.gupta@orbital.io>",
+    "recipient": "Hannah Schmidt <hannah.schmidt@orbital.io>",
+    "timestamp": "2026-06-05T13:20:00+00:00",
+    "body": "10:00 Thursday confirmed. I'll forward the calendar invite to the vendor."
+  },
+  {
+    "thread_id": "thread-006",
+    "subject": "Sprint retrospective",
+    "sender": "Lucas Fontaine <lucas.fontaine@codecanvas.app>",
+    "recipient": "Emma Wright <emma.wright@codecanvas.app>",
+    "timestamp": "2026-06-08T09:00:00+00:00",
+    "body": "Emma, we should schedule the sprint retro. Does the team have an hour on Friday?"
+  },
+  {
+    "thread_id": "thread-006",
+    "subject": "Re: Sprint retrospective",
+    "sender": "Emma Wright <emma.wright@codecanvas.app>",
+    "recipient": "Lucas Fontaine <lucas.fontaine@codecanvas.app>",
+    "timestamp": "2026-06-08T09:45:00+00:00",
+    "body": "Friday is mostly free. 13:00 or 14:00 both work. Any preference for the team?"
+  },
+  {
+    "thread_id": "thread-006",
+    "subject": "Re: Sprint retrospective",
+    "sender": "Lucas Fontaine <lucas.fontaine@codecanvas.app>",
+    "recipient": "Emma Wright <emma.wright@codecanvas.app>",
+    "timestamp": "2026-06-08T10:10:00+00:00",
+    "body": "Let's go with 14:00 so people can have lunch first."
+  },
+  {
+    "thread_id": "thread-006",
+    "subject": "Re: Sprint retrospective",
+    "sender": "Emma Wright <emma.wright@codecanvas.app>",
+    "recipient": "Lucas Fontaine <lucas.fontaine@codecanvas.app>",
+    "timestamp": "2026-06-08T10:15:00+00:00",
+    "body": "14:00 Friday confirmed. I'll set up the Miro board for it."
+  },
+  {
+    "thread_id": "thread-007",
+    "subject": "Customer success check-in",
+    "sender": "Olivia Brooks <olivia.brooks@summitcrm.com>",
+    "recipient": "Noah Williams <noah.williams@acme-corp.com>",
+    "timestamp": "2026-06-09T14:30:00+00:00",
+    "body": "Hi Noah, I'd love to schedule our quarterly check-in. Are you available for 45 minutes next week?"
+  },
+  {
+    "thread_id": "thread-007",
+    "subject": "Re: Customer success check-in",
+    "sender": "Noah Williams <noah.williams@acme-corp.com>",
+    "recipient": "Olivia Brooks <olivia.brooks@summitcrm.com>",
+    "timestamp": "2026-06-09T16:05:00+00:00",
+    "body": "Hi Olivia, sounds good. I'm out Monday and Tuesday but free Wednesday through Friday."
+  },
+  {
+    "thread_id": "thread-007",
+    "subject": "Re: Customer success check-in",
+    "sender": "Olivia Brooks <olivia.brooks@summitcrm.com>",
+    "recipient": "Noah Williams <noah.williams@acme-corp.com>",
+    "timestamp": "2026-06-09T16:40:00+00:00",
+    "body": "Great, would Thursday at 15:00 your time work?"
+  },
+  {
+    "thread_id": "thread-007",
+    "subject": "Re: Customer success check-in",
+    "sender": "Noah Williams <noah.williams@acme-corp.com>",
+    "recipient": "Olivia Brooks <olivia.brooks@summitcrm.com>",
+    "timestamp": "2026-06-09T17:12:00+00:00",
+    "body": "Thursday 15:00 works. Confirmed, thanks for setting it up."
+  },
+  {
+    "thread_id": "thread-008",
+    "subject": "Engineering architecture discussion",
+    "sender": "Yuki Tanaka <yuki.tanaka@dataloop.tech>",
+    "recipient": "Aisha Rahman <aisha.rahman@dataloop.tech>",
+    "timestamp": "2026-06-10T10:25:00+00:00",
+    "body": "Aisha, can we sit down for an hour to discuss the service mesh migration? It's getting urgent."
+  },
+  {
+    "thread_id": "thread-008",
+    "subject": "Re: Engineering architecture discussion",
+    "sender": "Aisha Rahman <aisha.rahman@dataloop.tech>",
+    "recipient": "Yuki Tanaka <yuki.tanaka@dataloop.tech>",
+    "timestamp": "2026-06-10T11:00:00+00:00",
+    "body": "Agreed it's urgent. I can do today at 16:00 or tomorrow at 09:00. Which is better?"
+  },
+  {
+    "thread_id": "thread-008",
+    "subject": "Re: Engineering architecture discussion",
+    "sender": "Yuki Tanaka <yuki.tanaka@dataloop.tech>",
+    "recipient": "Aisha Rahman <aisha.rahman@dataloop.tech>",
+    "timestamp": "2026-06-10T11:14:00+00:00",
+    "body": "Let's do tomorrow at 09:00 with fresh minds."
+  },
+  {
+    "thread_id": "thread-008",
+    "subject": "Re: Engineering architecture discussion",
+    "sender": "Aisha Rahman <aisha.rahman@dataloop.tech>",
+    "recipient": "Yuki Tanaka <yuki.tanaka@dataloop.tech>",
+    "timestamp": "2026-06-10T11:30:00+00:00",
+    "body": "09:00 tomorrow confirmed. I'll bring the architecture diagrams."
+  },
+  {
+    "thread_id": "thread-009",
+    "subject": "Marketing campaign planning",
+    "sender": "Grace Lee <grace.lee@vividmedia.co>",
+    "recipient": "Felix Wagner <felix.wagner@vividmedia.co>",
+    "timestamp": "2026-06-11T08:50:00+00:00",
+    "body": "Felix, we need to plan the autumn campaign. Can you spare 90 minutes this week?"
+  },
+  {
+    "thread_id": "thread-009",
+    "subject": "Re: Marketing campaign planning",
+    "sender": "Felix Wagner <felix.wagner@vividmedia.co>",
+    "recipient": "Grace Lee <grace.lee@vividmedia.co>",
+    "timestamp": "2026-06-11T09:35:00+00:00",
+    "body": "90 minutes is a lot for this week. Wednesday afternoon is the only block I have. Does 13:30 work?"
+  },
+  {
+    "thread_id": "thread-009",
+    "subject": "Re: Marketing campaign planning",
+    "sender": "Grace Lee <grace.lee@vividmedia.co>",
+    "recipient": "Felix Wagner <felix.wagner@vividmedia.co>",
+    "timestamp": "2026-06-11T10:00:00+00:00",
+    "body": "13:30 Wednesday works. I'll prepare the creative brief beforehand."
+  },
+  {
+    "thread_id": "thread-009",
+    "subject": "Re: Marketing campaign planning",
+    "sender": "Felix Wagner <felix.wagner@vividmedia.co>",
+    "recipient": "Grace Lee <grace.lee@vividmedia.co>",
+    "timestamp": "2026-06-11T10:08:00+00:00",
+    "body": "Confirmed for 13:30 Wednesday. Looking forward to it."
+  },
+  {
+    "thread_id": "thread-010",
+    "subject": "Onboarding new hire",
+    "sender": "David Cohen <david.cohen@pinemark.org>",
+    "recipient": "Laura Jensen <laura.jensen@pinemark.org>",
+    "timestamp": "2026-06-12T11:40:00+00:00",
+    "body": "Laura, our new hire starts Monday. Can we meet to align on their first-week schedule?"
+  },
+  {
+    "thread_id": "thread-010",
+    "subject": "Re: Onboarding new hire",
+    "sender": "Laura Jensen <laura.jensen@pinemark.org>",
+    "recipient": "David Cohen <david.cohen@pinemark.org>",
+    "timestamp": "2026-06-12T12:15:00+00:00",
+    "body": "Good idea. I have 30 minutes free Friday at 11:00 or 16:00. Either work for you?"
+  },
+  {
+    "thread_id": "thread-010",
+    "subject": "Re: Onboarding new hire",
+    "sender": "David Cohen <david.cohen@pinemark.org>",
+    "recipient": "Laura Jensen <laura.jensen@pinemark.org>",
+    "timestamp": "2026-06-12T13:00:00+00:00",
+    "body": "11:00 Friday is better for me."
+  },
+  {
+    "thread_id": "thread-010",
+    "subject": "Re: Onboarding new hire",
+    "sender": "Laura Jensen <laura.jensen@pinemark.org>",
+    "recipient": "David Cohen <david.cohen@pinemark.org>",
+    "timestamp": "2026-06-12T13:05:00+00:00",
+    "body": "11:00 Friday confirmed. I'll draft the onboarding checklist."
+  },
+  {
+    "thread_id": "thread-011",
+    "subject": "Partnership intro call",
+    "sender": "Isabella Moreau <isabella.moreau@greenscale.eu>",
+    "recipient": "Marcus Hale <marcus.hale@brightleaf.com>",
+    "timestamp": "2026-06-15T09:20:00+00:00",
+    "body": "Hi Marcus, following up on the conference. Could we set up a 30-minute intro call to explore a partnership?"
+  },
+  {
+    "thread_id": "thread-011",
+    "subject": "Re: Partnership intro call",
+    "sender": "Marcus Hale <marcus.hale@brightleaf.com>",
+    "recipient": "Isabella Moreau <isabella.moreau@greenscale.eu>",
+    "timestamp": "2026-06-15T11:45:00+00:00",
+    "body": "Hi Isabella, great to hear from you. I'm open Tuesday or Thursday afternoon next week. What's your timezone?"
+  },
+  {
+    "thread_id": "thread-011",
+    "subject": "Re: Partnership intro call",
+    "sender": "Isabella Moreau <isabella.moreau@greenscale.eu>",
+    "recipient": "Marcus Hale <marcus.hale@brightleaf.com>",
+    "timestamp": "2026-06-15T12:30:00+00:00",
+    "body": "I'm CET. Thursday at 16:00 CET (which should be 10:00 your time) works well."
+  },
+  {
+    "thread_id": "thread-011",
+    "subject": "Re: Partnership intro call",
+    "sender": "Marcus Hale <marcus.hale@brightleaf.com>",
+    "recipient": "Isabella Moreau <isabella.moreau@greenscale.eu>",
+    "timestamp": "2026-06-15T13:10:00+00:00",
+    "body": "10:00 my time Thursday confirmed. I'll send a calendar invite with a video link."
+  },
+  {
+    "thread_id": "thread-012",
+    "subject": "Performance review scheduling",
+    "sender": "Robert King <robert.king@helixlabs.dev>",
+    "recipient": "Nina Petrova <nina.petrova@helixlabs.dev>",
+    "timestamp": "2026-06-16T14:00:00+00:00",
+    "body": "Nina, it's time for your mid-year performance review. Can we book an hour next week?"
+  },
+  {
+    "thread_id": "thread-012",
+    "subject": "Re: Performance review scheduling",
+    "sender": "Nina Petrova <nina.petrova@helixlabs.dev>",
+    "recipient": "Robert King <robert.king@helixlabs.dev>",
+    "timestamp": "2026-06-16T15:20:00+00:00",
+    "body": "Of course. I'm free most of Monday and Tuesday. Do you have a preferred slot?"
+  },
+  {
+    "thread_id": "thread-012",
+    "subject": "Re: Performance review scheduling",
+    "sender": "Robert King <robert.king@helixlabs.dev>",
+    "recipient": "Nina Petrova <nina.petrova@helixlabs.dev>",
+    "timestamp": "2026-06-16T15:45:00+00:00",
+    "body": "Let's do Tuesday at 10:30 in the quiet room."
+  },
+  {
+    "thread_id": "thread-012",
+    "subject": "Re: Performance review scheduling",
+    "sender": "Nina Petrova <nina.petrova@helixlabs.dev>",
+    "recipient": "Robert King <robert.king@helixlabs.dev>",
+    "timestamp": "2026-06-16T16:02:00+00:00",
+    "body": "Tuesday 10:30 confirmed. Thank you."
+  },
+  {
+    "thread_id": "thread-013",
+    "subject": "Product launch dry run",
+    "sender": "Chloe Martin <chloe.martin@orbital.io>",
+    "recipient": "Sam Turner <sam.turner@orbital.io>",
+    "timestamp": "2026-06-17T10:10:00+00:00",
+    "body": "Sam, we should do a dry run before the launch. Can the team meet for an hour Thursday or Friday?"
+  },
+  {
+    "thread_id": "thread-013",
+    "subject": "Re: Product launch dry run",
+    "sender": "Sam Turner <sam.turner@orbital.io>",
+    "recipient": "Chloe Martin <chloe.martin@orbital.io>",
+    "timestamp": "2026-06-17T11:25:00+00:00",
+    "body": "Thursday I'm in back-to-backs. Friday morning is clear though. 09:30?"
+  },
+  {
+    "thread_id": "thread-013",
+    "subject": "Re: Product launch dry run",
+    "sender": "Chloe Martin <chloe.martin@orbital.io>",
+    "recipient": "Sam Turner <sam.turner@orbital.io>",
+    "timestamp": "2026-06-17T11:50:00+00:00",
+    "body": "09:30 Friday is perfect. I'll prepare the run-of-show."
+  },
+  {
+    "thread_id": "thread-013",
+    "subject": "Re: Product launch dry run",
+    "sender": "Sam Turner <sam.turner@orbital.io>",
+    "recipient": "Chloe Martin <chloe.martin@orbital.io>",
+    "timestamp": "2026-06-17T12:00:00+00:00",
+    "body": "Confirmed, 09:30 Friday. See everyone there."
+  },
+  {
+    "thread_id": "thread-014",
+    "subject": "Legal contract review",
+    "sender": "Victor Alvarez <victor.alvarez@finhub.co>",
+    "recipient": "Helen Park <helen.park@finhub.co>",
+    "timestamp": "2026-06-18T09:00:00+00:00",
+    "body": "Helen, the master services agreement needs a review before signing. Can we meet for 45 minutes this week?"
+  },
+  {
+    "thread_id": "thread-014",
+    "subject": "Re: Legal contract review",
+    "sender": "Helen Park <helen.park@finhub.co>",
+    "recipient": "Victor Alvarez <victor.alvarez@finhub.co>",
+    "timestamp": "2026-06-18T10:30:00+00:00",
+    "body": "I can squeeze it in. Wednesday at 14:00 or Thursday at 11:00. Which do you prefer?"
+  },
+  {
+    "thread_id": "thread-014",
+    "subject": "Re: Legal contract review",
+    "sender": "Victor Alvarez <victor.alvarez@finhub.co>",
+    "recipient": "Helen Park <helen.park@finhub.co>",
+    "timestamp": "2026-06-18T11:15:00+00:00",
+    "body": "Thursday at 11:00 works better so I can prep the redlines."
+  },
+  {
+    "thread_id": "thread-014",
+    "subject": "Re: Legal contract review",
+    "sender": "Helen Park <helen.park@finhub.co>",
+    "recipient": "Victor Alvarez <victor.alvarez@finhub.co>",
+    "timestamp": "2026-06-18T11:40:00+00:00",
+    "body": "Thursday 11:00 confirmed. Send over the redlines when ready."
+  },
+  {
+    "thread_id": "thread-015",
+    "subject": "All-hands rehearsal",
+    "sender": "Maya Singh <maya.singh@codecanvas.app>",
+    "recipient": "Oliver Bennett <oliver.bennett@codecanvas.app>",
+    "timestamp": "2026-06-19T13:00:00+00:00",
+    "body": "Oliver, can we rehearse the all-hands deck before Monday? I think 45 minutes should be enough."
+  },
+  {
+    "thread_id": "thread-015",
+    "subject": "Re: All-hands rehearsal",
+    "sender": "Oliver Bennett <oliver.bennett@codecanvas.app>",
+    "recipient": "Maya Singh <maya.singh@codecanvas.app>",
+    "timestamp": "2026-06-19T13:30:00+00:00",
+    "body": "Good call. Friday late afternoon is open. 16:00 or 16:30?"
+  },
+  {
+    "thread_id": "thread-015",
+    "subject": "Re: All-hands rehearsal",
+    "sender": "Maya Singh <maya.singh@codecanvas.app>",
+    "recipient": "Oliver Bennett <oliver.bennett@codecanvas.app>",
+    "timestamp": "2026-06-19T13:48:00+00:00",
+    "body": "Let's do 16:00 so we wrap before the end of day."
+  },
+  {
+    "thread_id": "thread-015",
+    "subject": "Re: All-hands rehearsal",
+    "sender": "Oliver Bennett <oliver.bennett@codecanvas.app>",
+    "recipient": "Maya Singh <maya.singh@codecanvas.app>",
+    "timestamp": "2026-06-19T13:55:00+00:00",
+    "body": "16:00 Friday confirmed. I'll share the latest slides beforehand."
+  }
+]
