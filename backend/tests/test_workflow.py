@@ -5,8 +5,23 @@ from __future__ import annotations
 import json
 from unittest.mock import MagicMock, patch
 
+import pytest
+
+from app.config import reset_settings_cache
 from app.services.demo_data import load_demo_workflow
-from app.services.workflow_service import extract_workflow, MODEL, MAX_TOKENS
+from app.services.workflow_service import (
+    extract_workflow,
+    extract_workflow_with_meta,
+    MODEL,
+    MAX_TOKENS,
+)
+
+
+@pytest.fixture(autouse=True)
+def _clear_settings_cache():
+    reset_settings_cache()
+    yield
+    reset_settings_cache()
 
 
 def test_extract_workflow_falls_back_without_api_key():
@@ -70,6 +85,43 @@ def test_extract_workflow_overrides_llm_proposal_with_rules():
     assert len(result.automation_proposal) == 7
     assert result.automation_proposal[-1].step_id == "step_7"
     assert result.automation_proposal[-1].is_manual is True
+
+
+def test_extract_workflow_demo_mode_skips_openai():
+    with patch("openai.OpenAI") as mock_openai:
+        result = extract_workflow([], demo_mode=True)
+    mock_openai.assert_not_called()
+    assert result.occurrence_count == 47
+
+
+def test_extract_workflow_with_meta_reports_demo_mode():
+    workflow, used_demo = extract_workflow_with_meta([], demo_mode=True)
+    assert used_demo is True
+    assert workflow.occurrence_count == 47
+
+
+def test_extract_workflow_with_meta_reports_fallback():
+    # No key configured -> fallback -> used_demo True.
+    workflow, used_demo = extract_workflow_with_meta([{"subject": "x"}])
+    assert used_demo is True
+    assert workflow.workflow_name == "Email-to-Calendar Meeting Scheduling"
+
+
+def test_extract_workflow_with_meta_reports_live_success():
+    demo = load_demo_workflow()
+    mock_response = MagicMock()
+    mock_response.choices = [
+        MagicMock(message=MagicMock(content=json.dumps(demo.model_dump())))
+    ]
+    mock_client = MagicMock()
+    mock_client.chat.completions.create.return_value = mock_response
+
+    with patch("openai.OpenAI", return_value=mock_client):
+        with patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"}):
+            workflow, used_demo = extract_workflow_with_meta([{"subject": "x"}])
+
+    assert used_demo is False
+    assert workflow.workflow_name == demo.workflow_name
 
 
 def test_extract_workflow_falls_back_on_empty_content():

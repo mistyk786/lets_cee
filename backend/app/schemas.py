@@ -14,6 +14,48 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
+class OpportunityInputs(BaseModel):
+    """Normalised 0-1 signals for opportunity scoring."""
+
+    repetition: float = Field(ge=0, le=1)
+    manual_effort: float = Field(ge=0, le=1)
+    consistency: float = Field(ge=0, le=1)
+    data_availability: float = Field(ge=0, le=1)
+    risk: float = Field(ge=0, le=1)
+
+
+class ForecastInputs(BaseModel):
+    """Inputs for time-saved forecasting."""
+
+    eligible_runs: int = Field(ge=0)
+    manual_minutes_per_run: float = Field(ge=0)
+    review_minutes_per_run: float = Field(ge=0)
+    exception_minutes: float = Field(ge=0)
+
+
+class EffectivenessInputs(BaseModel):
+    """Inputs for post-automation effectiveness scoring."""
+
+    realised_time_ratio: float = Field(ge=0, le=1)
+    coverage_ratio: float = Field(ge=0, le=1)
+    reliability_ratio: float = Field(ge=0, le=1)
+    rework_ratio: float = Field(ge=0, le=1)
+    cycle_time_ratio: float = Field(ge=0, le=1)
+    acceptance_ratio: float = Field(ge=0, le=1)
+    has_major_error: bool = False
+
+
+class HealthStatus(BaseModel):
+    """Health/readiness report for deployment probes and Member 3 integration."""
+
+    status: Literal["ok", "degraded"]
+    version: str
+    environment: str
+    openai_configured: bool
+    demo_available: bool = True
+    message: str
+
+
 class WorkflowStep(BaseModel):
     """A single step in a detected or proposed workflow."""
 
@@ -82,3 +124,13 @@ class EffectivenessMetrics(BaseModel):
     safety_status: Literal["ok", "needs_review"]
     overall_score: float = Field(ge=0, le=100)
     recommendation: str
+
+
+class AnalysisResult(BaseModel):
+    """Complete analysis payload returned by the public engine API."""
+
+    workflow: DetectedWorkflow
+    forecast: ForecastMetrics | None = None
+    effectiveness: EffectivenessMetrics | None = None
+    demo_mode: bool
+    engine_version: str

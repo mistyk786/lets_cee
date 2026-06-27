@@ -48,8 +48,17 @@ def test_opportunity_typical_case():
 
 
 def test_opportunity_clamped_upper_bound():
-    # Inflated inputs should never exceed 100.
-    assert calculate_opportunity_score(2.0, 2.0, 2.0, 2.0, 0.0) == 100.0
+    # Inputs above 1.0 are clamped; max score with zero risk is 90.
+    assert calculate_opportunity_score(2.0, 2.0, 2.0, 2.0, 0.0) == 90.0
+
+
+def test_opportunity_clamps_negative_inputs():
+    assert calculate_opportunity_score(-1.0, -1.0, -1.0, -1.0, -1.0) == 0.0
+
+
+def test_effectiveness_clamps_ratios_above_one():
+    result = calculate_effectiveness(1.5, 1.5, 1.5, 1.5, 1.5, 1.5, False)
+    assert result.overall_score == 100.0
 
 
 # ---------------------------------------------------------------------------
