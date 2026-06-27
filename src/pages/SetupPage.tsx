@@ -26,8 +26,7 @@ const ANALYSIS_STEPS = [
 
 export function SetupPage() {
   const navigate = useNavigate();
-  const { loadDemo, watcherStatus } = useApp();
-  const { loadDemo, setNotifications } = useApp();
+  const { loadDemo, watcherStatus, setNotifications } = useApp();
   const [dataset, setDataset] = useState<DemoDataset | null>(null);
   const [analysing, setAnalysing] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
