@@ -9,7 +9,7 @@ on restart — this is a demo, not a database.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from app.models import (
@@ -20,12 +20,16 @@ from app.models import (
 )
 from app.schemas import AutomationRule
 from app.services.calendar_service import find_available_slots
-from app.services.dataset_service import load_demo_calendar
 from app.services.demo_data import load_demo_workflow
+from app.services import ingestion_service
 
-# Day used for the simulated proposal. Chosen so existing demo events on the
-# morning of 2026-06-22 (09:15-09:45) visibly push the first proposed slot.
-_DEMO_SCHEDULING_DAY = "2026-06-22"
+
+def _next_scheduling_day() -> str:
+    """Next upcoming weekday (skip Sat/Sun) so proposed slots are never in the past."""
+    day = datetime.now(timezone.utc).date() + timedelta(days=1)
+    while day.weekday() >= 5:  # 5=Sat, 6=Sun
+        day += timedelta(days=1)
+    return day.isoformat()
 
 _DEFAULT_EMAIL: dict[str, Any] = {
     "sender": "Jordan Lee <jordan.lee@northwind.io>",
@@ -46,9 +50,10 @@ def _default_rules() -> AutomationRule:
 
 
 def _busy_events() -> list[dict[str, str]]:
+    events_raw, _source = ingestion_service.get_calendar_events(prefer_live=True)
     events = [
-        {"start_time": e.start_time, "end_time": e.end_time}
-        for e in load_demo_calendar()
+        {"start_time": e["start_time"], "end_time": e["end_time"]}
+        for e in events_raw
     ]
     events.extend(
         {"start_time": e["start_time"], "end_time": e["end_time"]}
@@ -81,17 +86,19 @@ def activate(
     _active_rules.append(active_rules)
 
     email = {**_DEFAULT_EMAIL, **(incoming_email or {})}
-    duration = (
+    requested = (
         email.get("requested_duration_minutes")
         or active_rules.meeting_duration_minutes
     )
+    # Clamp: LLM-derived rules occasionally return absurd durations (e.g. 720).
+    duration = max(15, min(int(requested or 30), 120))
 
     raw_slots = find_available_slots(
         _busy_events(),
         duration,
         active_rules.working_hours_start,
         active_rules.working_hours_end,
-        _DEMO_SCHEDULING_DAY,
+        _next_scheduling_day(),
         max_slots=active_rules.max_slots_proposed,
     )
     slots = [TimeSlot(**s) for s in raw_slots]

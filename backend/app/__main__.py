@@ -27,7 +27,7 @@ def _configure_logging(level: str) -> None:
 def _cmd_health(engine: SlothEngine) -> int:
     health = engine.health()
     print(json.dumps(health.model_dump(), indent=2))
-    return 0  # "degraded" (no OpenAI key) is still a runnable state
+    return 0  # "degraded" (no Cursor key) is still a runnable state
 
 
 def _cmd_analyze(engine: SlothEngine, args: argparse.Namespace) -> int:
@@ -78,7 +78,7 @@ def main(argv: list[str] | None = None) -> int:
     analyze_parser.add_argument(
         "--demo-mode",
         action="store_true",
-        help="Skip OpenAI and use demo workflow extraction",
+        help="Skip Cursor and use demo workflow extraction",
     )
     analyze_parser.add_argument(
         "--auto-forecast",

@@ -77,3 +77,34 @@ class ActivationResponse(BaseModel):
     proposed_slots: list[TimeSlot]
     tentative_event: TentativeEvent | None = None
     run: AutomationRun
+
+
+class NotificationItem(BaseModel):
+    """Actionable inbox item for the notification → automate prototype."""
+
+    id: str
+    title: str
+    message: str
+    created_at: str
+    read: bool = False
+    opportunity_id: str | None = None
+    recoverable_minutes_per_week: int | None = None
+    action: str = "review"  # "automate" | "review"
+    status: str = "pending"  # "pending" | "completed"
+
+
+class PrototypeBootstrapResponse(BaseModel):
+    """Result of scanning inbox and surfacing actionable notifications."""
+
+    workflow_name: str
+    opportunity_score: float
+    notifications: list[NotificationItem]
+    demo_mode: bool
+    data_source: str = "demo"  # demo | imap | upload
+
+
+class AutomateNotificationResponse(BaseModel):
+    """Result of running automation from a notification click."""
+
+    notification: NotificationItem
+    activation: ActivationResponse

@@ -61,8 +61,11 @@ export function NotificationBell() {
                 onClick={() => {
                   markNotificationRead(n.id);
                   setOpen(false);
-                  if (n.opportunityId)
+                  if (n.action === "automate") {
+                    navigate(`/automate/${n.id}`);
+                  } else if (n.opportunityId) {
                     navigate(`/opportunities/${n.opportunityId}`);
+                  }
                 }}
                 className="flex w-full gap-3 border-b border-ink-50 px-4 py-3 text-left transition-colors last:border-0 hover:bg-ink-50"
               >
@@ -76,9 +79,14 @@ export function NotificationBell() {
                   <p className="mt-0.5 line-clamp-2 text-xs text-ink-500">
                     {n.message}
                   </p>
-                  {n.recoverableMinutesPerWeek != null && (
-                    <p className="mt-1 text-xs font-medium text-moss-600">
-                      Recoverable: {n.recoverableMinutesPerWeek} min/week
+                  {n.action === "automate" && n.status !== "completed" && (
+                    <p className="mt-1 text-xs font-semibold text-moss-700">
+                      Click to run automation →
+                    </p>
+                  )}
+                  {n.status === "completed" && (
+                    <p className="mt-1 text-xs font-medium text-ink-500">
+                      Completed
                     </p>
                   )}
                   <p className="mt-1 text-[11px] text-ink-400">
