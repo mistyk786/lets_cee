@@ -174,21 +174,12 @@ def fetch_recent_emails(
             subject = _decode_header_value(hdr.get("Subject"))
             sender = _decode_header_value(hdr.get("From"))
 
-            if scheduling_only:
-                if _is_automated_sender(sender):
-                    continue
-                if not looks_like_scheduling(subject):
-                    # Subject didn't match; body check happens after body fetch.
-                    meta[seq] = {
-                        "subject": subject,
-                        "sender": sender,
-                        "recipient": _decode_header_value(hdr.get("To")),
-                        "timestamp": _to_iso(hdr.get("Date")),
-                        "message_id": _decode_header_value(hdr.get("Message-ID")),
-                        "needs_body_check": True,
-                    }
-                    keep_seqs.append(seq)
-                    continue
+            if _is_automated_sender(sender):
+                continue
+
+            needs_body_check = False
+            if scheduling_only and not looks_like_scheduling(subject):
+                needs_body_check = True
 
             meta[seq] = {
                 "subject": subject,
@@ -196,7 +187,7 @@ def fetch_recent_emails(
                 "recipient": _decode_header_value(hdr.get("To")),
                 "timestamp": _to_iso(hdr.get("Date")),
                 "message_id": _decode_header_value(hdr.get("Message-ID")),
-                "needs_body_check": False,
+                "needs_body_check": needs_body_check,
             }
             keep_seqs.append(seq)
 

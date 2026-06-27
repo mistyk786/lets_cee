@@ -66,12 +66,14 @@ def get_raw_emails(
     active = settings or get_settings()
     if prefer_live and imap_configured(active):
         try:
-            fetched = fetch_recent_emails(settings=active)
-            if fetched:
-                return fetched, "imap"
+            fetched = fetch_recent_emails(
+                settings=active,
+                scheduling_only=False,
+            )
+            return fetched, "imap"
         except Exception:
-            # Fall through to demo on IMAP errors so the prototype still runs.
-            pass
+            # IMAP configured but failed — do not silently substitute demo data.
+            return [], "imap"
 
     raw = [email.model_dump() for email in load_demo_emails()]
     return raw, "demo"
@@ -104,6 +106,36 @@ def get_calendar_events(
         for e in load_demo_calendar()
     ]
     return events, "demo"
+
+
+def list_recent_emails(
+    *,
+    limit: int = 10,
+    prefer_live: bool = True,
+    settings: Settings | None = None,
+) -> tuple[list[dict[str, Any]], DataSource]:
+    """Return recent messages for the UI (newest first)."""
+    raw, source = get_raw_emails(
+        prefer_live=prefer_live,
+        settings=settings,
+    )
+
+    def _sort_key(email: dict[str, Any]) -> str:
+        return str(email.get("timestamp", ""))
+
+    sorted_emails = sorted(raw, key=_sort_key, reverse=True)
+    items: list[dict[str, Any]] = []
+    for email in sorted_emails[: max(1, min(limit, 20))]:
+        body = str(email.get("body", "")).replace("\n", " ").strip()
+        items.append(
+            {
+                "subject": str(email.get("subject") or "(no subject)"),
+                "sender": str(email.get("sender") or "Unknown sender"),
+                "timestamp": str(email.get("timestamp") or ""),
+                "preview": body[:140] if body else None,
+            }
+        )
+    return items, source
 
 
 def parse_ics_events(ics_text: str) -> list[dict[str, Any]]:

@@ -12,46 +12,94 @@ import {
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useApp } from "@/context/AppContext";
-import type { DemoDataset } from "@/lib/types";
+import type { WatcherStatus } from "@/lib/types";
 import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
 import { WatcherStatusPanel } from "@/components/layout/WatcherStatusPanel";
+import { RecentInboxPanel } from "@/components/inbox/RecentInboxPanel";
 
 const ANALYSIS_STEPS = [
-  "Reading approved email and calendar activity…",
-  "Detecting repeated scheduling patterns…",
-  "Mapping manual coordination steps…",
-  "Scoring automation readiness…",
+  "Reading recent inbox messages…",
+  "Detecting repeated workflow patterns…",
+  "Mapping manual steps and bottlenecks…",
+  "Scoring what can be safely automated…",
 ];
 
 export function SetupPage() {
   const navigate = useNavigate();
-  const { loadDemo, watcherStatus, setNotifications } = useApp();
-  const [dataset, setDataset] = useState<DemoDataset | null>(null);
+  const {
+    loadDemo,
+    watcherStatus,
+    setNotifications,
+    refreshNotifications,
+    refreshWatcherStatus,
+  } = useApp();
   const [analysing, setAnalysing] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
-
-  useEffect(() => {
-    api.getDemoData().then(setDataset);
-  }, []);
+  const [elapsedSec, setElapsedSec] = useState(0);
+  const [liveStatus, setLiveStatus] = useState<WatcherStatus | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const live = api.isLive();
 
   useEffect(() => {
     if (!analysing) return;
     const interval = setInterval(() => {
       setStepIndex((i) => Math.min(i + 1, ANALYSIS_STEPS.length - 1));
-    }, 400);
+    }, 4000);
     return () => clearInterval(interval);
   }, [analysing]);
+
+  async function finishToOverview(notifications: Awaited<
+    ReturnType<typeof api.runInboxAnalysis>
+  >["notifications"]) {
+    setNotifications(notifications);
+    await refreshNotifications();
+    await refreshWatcherStatus();
+    loadDemo();
+    navigate("/overview");
+  }
 
   async function handleAnalyse() {
     setAnalysing(true);
     setStepIndex(0);
-    const boot = await api.bootstrapPrototype();
-    await api.analyseWorkflow();
-    setNotifications(boot.notifications);
-    loadDemo();
-    navigate("/overview");
+    setElapsedSec(0);
+    setError(null);
+    setLiveStatus(null);
+
+    try {
+      const boot = await api.runInboxAnalysis((status, elapsed) => {
+        setElapsedSec(elapsed);
+        if (status) setLiveStatus(status);
+        if (status?.initialScanDone && status.workflowName) {
+          setStepIndex(ANALYSIS_STEPS.length - 1);
+        }
+      });
+      await finishToOverview(boot.notifications);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Scan failed. You can still open the dashboard."
+      );
+      setAnalysing(false);
+    }
   }
+
+  async function handleSkipToDashboard() {
+    try {
+      const items = await api.getNotifications();
+      await finishToOverview(items);
+    } catch {
+      loadDemo();
+      navigate("/overview");
+    }
+  }
+
+  const canSkip =
+    analysing &&
+    (elapsedSec >= 8 ||
+      liveStatus?.initialScanDone ||
+      watcherStatus?.initialScanDone);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-moss-50/50 to-white">
@@ -75,100 +123,101 @@ export function SetupPage() {
             >
               <div className="text-center">
                 <p className="mb-3 font-mono text-[11px] uppercase tracking-label text-moss-600">
-                  Demo dataset
+                  {live ? "Live inbox analysis" : "Offline preview"}
                 </p>
                 <h1 className="font-display text-3xl font-medium tracking-tighter text-ink-900">
-                  Start the Sloth prototype
+                  Optimise your inbox
                 </h1>
                 <p className="mt-2 text-ink-500">
-                  Sloth watches your inbox in the background (every 2 minutes).
-                  When it spots a repeated scheduling workflow, the bell
-                  lights up — one click to propose times and hold a calendar slot.
+                  Sloth reads your recent email, finds repeatable work (meetings,
+                  follow-ups, approvals, reports, and more), and tells you
+                  honestly what can — and cannot — be automated safely.
                 </p>
               </div>
 
               <div className="mt-8 space-y-4">
                 <WatcherStatusPanel status={watcherStatus} compact />
 
-                <div className="card p-5">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
-                    Workflow selected
-                  </p>
-                  <p className="mt-1 text-lg font-semibold text-ink-900">
-                    {dataset?.workflowName ?? "Internal Meeting Scheduling"}
-                  </p>
-                </div>
+                {live && <RecentInboxPanel limit={8} />}
 
-                <div className="grid gap-4 sm:grid-cols-2">
+                {watcherStatus?.initialScanDone && live && (
+                  <div className="rounded-xl border border-moss-200 bg-moss-50 px-4 py-3 text-sm text-moss-800">
+                    Inbox already scanned — clicking analyse should be instant.
+                  </div>
+                )}
+
+                {error && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    {error}
+                  </div>
+                )}
+
+                {live ? (
                   <div className="card p-5">
                     <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
-                      Data sources
+                      What happens on scan
                     </p>
-                    <div className="mt-3 space-y-2">
-                      <div className="flex items-center gap-2 text-sm text-ink-700">
-                        <Mail size={16} className="text-email" /> Email activity
+                    <ul className="mt-3 space-y-2 text-sm text-ink-700">
+                      <li>• Reads your real inbox via IMAP (no OAuth)</li>
+                      <li>• AI detects repeated workflows across email types</li>
+                      <li>• Shows “no automation available” if nothing qualifies</li>
+                      <li>• First AI scan may take up to 2 minutes</li>
+                    </ul>
+                  </div>
+                ) : (
+                  <>
+                    <div className="card p-5">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
+                        Data sources (demo)
+                      </p>
+                      <div className="mt-3 space-y-2">
+                        <div className="flex items-center gap-2 text-sm text-ink-700">
+                          <Mail size={16} className="text-email" /> Sample emails
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-ink-700">
+                          <CalendarDays size={16} className="text-calendar" />{" "}
+                          Sample calendar
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-ink-700">
-                        <CalendarDays size={16} className="text-calendar" />{" "}
-                        Calendar activity
+                    </div>
+                    <div className="card p-5">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
+                        Analysis period
+                      </p>
+                      <div className="mt-3 flex items-center gap-2 text-sm text-ink-700">
+                        <CalendarRange size={16} className="text-ink-400" />
+                        Last 30 days (bundled demo)
                       </div>
                     </div>
-                  </div>
-                  <div className="card p-5">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
-                      Analysis period
-                    </p>
-                    <div className="mt-3 flex items-center gap-2 text-sm text-ink-700">
-                      <CalendarRange size={16} className="text-ink-400" />
-                      Last {dataset?.analysisPeriodDays ?? 30} days
-                    </div>
-                  </div>
-                </div>
-
-                <div className="card p-5">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
-                    Mock data summary
-                  </p>
-                  <div className="mt-3 grid grid-cols-3 gap-3 text-center">
-                    <div>
-                      <p className="font-display text-3xl font-medium tracking-tighter tnum text-ink-900">
-                        {dataset?.summary.schedulingEmailRequests ?? 45}
-                      </p>
-                      <p className="text-xs text-ink-500">
-                        scheduling requests
-                      </p>
-                    </div>
-                    <div>
-                      <p className="font-display text-3xl font-medium tracking-tighter tnum text-ink-900">
-                        {dataset?.summary.calendarSources ?? 3}
-                      </p>
-                      <p className="text-xs text-ink-500">calendar sources</p>
-                    </div>
-                    <div>
-                      <p className="font-display text-3xl font-medium tracking-tighter tnum text-ink-900">
-                        {dataset?.summary.activityHistoryDays ?? 30}
-                      </p>
-                      <p className="text-xs text-ink-500">days of history</p>
-                    </div>
-                  </div>
-                </div>
+                  </>
+                )}
 
                 <div className="flex items-start gap-3 rounded-2xl border border-moss-200/70 bg-moss-50 p-4">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-moss-600 text-white">
                     <Sparkles size={15} />
                   </div>
                   <p className="text-sm leading-relaxed text-ink-700">
-                    “I'll look for repeated scheduling patterns, manual
-                    coordination steps, and safe ways to reduce effort.”
+                    “I'll look for any repeated manual work — not just meetings
+                    — and only suggest automation when the pattern is clear and
+                    safe.”
                   </p>
                 </div>
               </div>
 
-              <div className="mt-8 flex justify-center">
+              <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
                 <Button size="lg" onClick={handleAnalyse}>
-                  Scan inbox &amp; notify me
+                  Scan &amp; optimise
                   <ArrowRight size={18} />
                 </Button>
+                {live && watcherStatus?.initialScanDone && (
+                  <Button
+                    size="lg"
+                    variant="secondary"
+                    onClick={handleSkipToDashboard}
+                  >
+                    Go to dashboard
+                  </Button>
+                )}
               </div>
             </motion.div>
           ) : (
@@ -185,16 +234,25 @@ export function SetupPage() {
                 </span>
               </div>
               <h2 className="mt-6 text-xl font-bold text-ink-900">
-                SLOTH is mapping your workflow…
+                SLOTH is reading your inbox…
               </h2>
+              <p className="mt-2 text-sm text-ink-500">
+                AI analysis in progress ({elapsedSec}s). Usually 30–90 seconds;
+                can take up to 2 minutes on first scan.
+              </p>
+
+              {liveStatus && (
+                <div className="mt-4 w-full max-w-sm">
+                  <WatcherStatusPanel status={liveStatus} compact />
+                </div>
+              )}
+
               <div className="mt-6 w-full max-w-sm space-y-2 text-left">
                 {ANALYSIS_STEPS.map((step, i) => (
                   <div
                     key={step}
                     className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors ${
-                      i <= stepIndex
-                        ? "text-ink-700"
-                        : "text-ink-300"
+                      i <= stepIndex ? "text-ink-700" : "text-ink-300"
                     }`}
                   >
                     {i < stepIndex ? (
@@ -208,6 +266,16 @@ export function SetupPage() {
                   </div>
                 ))}
               </div>
+
+              {canSkip && (
+                <Button
+                  className="mt-8"
+                  variant="secondary"
+                  onClick={handleSkipToDashboard}
+                >
+                  Continue to dashboard
+                </Button>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

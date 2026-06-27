@@ -17,18 +17,23 @@ def watcher_status() -> dict:
 
 
 @router.post("/api/watcher/scan")
-def watcher_scan_now() -> dict:
-    """Trigger an immediate inbox scan."""
+def watcher_scan_now(
+    background: bool = False,
+    force_analysis: bool = True,
+) -> dict:
+    """Trigger an immediate inbox scan. Use ``background=true`` for non-blocking."""
     try:
-        return inbox_watcher.trigger_scan(force_analysis=True)
+        if background:
+            return inbox_watcher.trigger_scan_async(force_analysis=force_analysis)
+        return inbox_watcher.trigger_scan(force_analysis=force_analysis)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
 @router.post("/api/prototype/bootstrap", response_model=PrototypeBootstrapResponse)
-def bootstrap_prototype() -> PrototypeBootstrapResponse:
-    """Scan demo inbox and surface actionable notifications."""
-    return prototype_service.bootstrap_prototype()
+def bootstrap_prototype(force: bool = False) -> PrototypeBootstrapResponse:
+    """Return scan results; instant when a scan already ran unless ``force=True``."""
+    return prototype_service.bootstrap_prototype(force=force)
 
 
 @router.get("/api/notifications", response_model=list[NotificationItem])

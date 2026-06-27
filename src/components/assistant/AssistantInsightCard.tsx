@@ -1,11 +1,9 @@
-import { Sparkles } from "lucide-react";
 import type { AssistantContext } from "@/lib/types";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 /**
- * Contextual SLOTH Assistant card. Pulls a pre-seeded, context-aware insight
- * (not a generic chatbot) and renders suggested next actions.
+ * Contextual SLOTH Assistant card — live mode uses inbox analysis, demo uses seeds.
  */
 export function AssistantInsightCard({
   context,
@@ -29,8 +27,13 @@ export function AssistantInsightCard({
       )}
     >
       <div className="flex items-start gap-3">
-        <div className="relative mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-moss-600 text-white">
-          <Sparkles size={16} />
+        <div className="relative mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl">
+          <img
+            src="/sloth-logo.png"
+            alt=""
+            className="h-9 w-9 object-cover"
+            aria-hidden="true"
+          />
         </div>
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-wide text-moss-700">

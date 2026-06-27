@@ -88,6 +88,18 @@ class AutomationRule(BaseModel):
     max_slots_proposed: int
 
 
+WorkflowCategory = Literal[
+    "scheduling",
+    "follow_up",
+    "approval",
+    "reporting",
+    "onboarding",
+    "coordination",
+    "none",
+    "other",
+]
+
+
 class DetectedWorkflow(BaseModel):
     """A repeated workflow detected from email + calendar activity."""
 
@@ -99,6 +111,10 @@ class DetectedWorkflow(BaseModel):
     automation_proposal: list[WorkflowStep]
     assumptions: list[str]
     automation_rules: AutomationRule
+    automation_available: bool = True
+    workflow_category: WorkflowCategory = "other"
+    automation_summary: str = ""
+    automatable_actions: list[str] = Field(default_factory=list)
 
 
 class ForecastMetrics(BaseModel):

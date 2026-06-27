@@ -41,6 +41,34 @@ END:VCALENDAR
     assert "2026-06-22" in events[0]["start_time"]
 
 
+def test_list_recent_emails_returns_preview_and_source():
+    ingestion_service.set_uploaded_emails(
+        [
+            {
+                "thread_id": "t1",
+                "subject": "Weekly report",
+                "sender": "boss@example.com",
+                "recipient": "me@example.com",
+                "timestamp": "2026-06-02T10:00:00+00:00",
+                "body": "Please send the weekly numbers by Friday.",
+            },
+            {
+                "thread_id": "t2",
+                "subject": "Coffee?",
+                "sender": "friend@example.com",
+                "recipient": "me@example.com",
+                "timestamp": "2026-06-01T10:00:00+00:00",
+                "body": "Want to grab coffee tomorrow?",
+            },
+        ]
+    )
+    emails, source = ingestion_service.list_recent_emails(limit=5)
+    assert source == "upload"
+    assert len(emails) == 2
+    assert emails[0]["subject"] == "Weekly report"
+    assert emails[0]["preview"].startswith("Please send")
+
+
 def test_uploaded_emails_take_priority_over_demo():
     ingestion_service.set_uploaded_emails(
         [

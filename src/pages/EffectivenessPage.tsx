@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   BarChart3,
   Clock,
@@ -9,6 +9,7 @@ import {
   Timer,
   Sparkles,
   TrendingUp,
+  Inbox,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import type { EffectivenessMetrics } from "@/lib/types";
@@ -18,9 +19,12 @@ import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { ScoreRing } from "@/components/ui/Progress";
 import { LoadingState } from "@/components/ui/LoadingState";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Button } from "@/components/ui/Button";
 import { MetricCard } from "@/components/metrics/MetricCard";
 import { ScoreBreakdown } from "@/components/metrics/ScoreBreakdown";
 import { SafetyStatusCard } from "@/components/metrics/SafetyStatusCard";
+import { AssistantInsightCard } from "@/components/assistant/AssistantInsightCard";
 import { scoreBand } from "@/lib/utils";
 
 const BAND_TONE = {
@@ -32,13 +36,42 @@ const BAND_TONE = {
 
 export function EffectivenessPage() {
   const { id } = useParams();
-  const [metrics, setMetrics] = useState<EffectivenessMetrics | null>(null);
+  const navigate = useNavigate();
+  const live = api.isLive();
+  const [metrics, setMetrics] = useState<EffectivenessMetrics | null | undefined>(
+    undefined
+  );
 
   useEffect(() => {
     api.getEffectiveness(id).then(setMetrics);
   }, [id]);
 
-  if (!metrics) return <LoadingState label="Loading effectiveness…" />;
+  if (metrics === undefined) {
+    return <LoadingState label="Loading effectiveness…" />;
+  }
+
+  if (!metrics) {
+    return (
+      <div className="space-y-6">
+        <SectionLabel index="04">Measure</SectionLabel>
+        <EmptyState
+          icon={<Inbox size={22} />}
+          title="No impact data yet"
+          description={
+            live
+              ? "Activate an automation from a notification first. Nothing sends without your approval."
+              : "Run without a live backend to see demo effectiveness metrics."
+          }
+          action={
+            <Button onClick={() => navigate(live ? "/overview" : "/opportunities")}>
+              {live ? "Back to overview" : "Browse opportunities"}
+            </Button>
+          }
+        />
+        <AssistantInsightCard context="effectiveness" />
+      </div>
+    );
+  }
 
   const band = scoreBand(metrics.overallScore);
   const needsReview = metrics.safetyStatus === "needs_review";
@@ -58,8 +91,7 @@ export function EffectivenessPage() {
             </h1>
           </div>
           <p className="mt-1 text-ink-500">
-            Internal Meeting Scheduling Assistant · effectiveness after
-            activation
+            {live ? "Post-activation impact" : "Demo · Internal Meeting Scheduling Assistant"}
           </p>
         </div>
         <StepProgress current="measure" />

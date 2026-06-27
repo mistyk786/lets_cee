@@ -153,6 +153,19 @@ export function WatcherStatusPanel({
         </p>
       )}
 
+      {status.automationAvailable === false && status.automationSummary && (
+        <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          {status.automationSummary}
+        </p>
+      )}
+
+      {status.automationAvailable && status.workflowCategory && (
+        <p className="mt-2 text-xs text-moss-700">
+          Category:{" "}
+          <span className="font-medium">{status.workflowCategory}</span>
+        </p>
+      )}
+
       {status.lastError && (
         <p className="mt-2 text-xs text-amber-700">{status.lastError}</p>
       )}

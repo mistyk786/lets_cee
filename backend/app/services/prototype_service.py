@@ -1,11 +1,9 @@
 """Notification-driven prototype orchestration.
 
-This is the real product flow for the hackathon demo:
+Live product flow:
   1. Scan inbox (IMAP / upload / demo) and detect repeated workflows.
-  2. Surface a notification: "Sloth can handle this scheduling email."
-  3. User clicks → run activation (slots, draft reply, tentative calendar hold).
-
-``run_inbox_scan`` is called by the background watcher and manual bootstrap.
+  2. Surface honest notifications — automate only when safe, else explain why not.
+  3. User clicks → run activation for scheduling workflows (draft + slots).
 """
 
 from __future__ import annotations
@@ -27,15 +25,12 @@ from app.services.imap_service import looks_like_scheduling
 logger = logging.getLogger(__name__)
 
 _SCHEDULING_NOTIFICATION_ID = "n-incoming-scheduling"
+_NO_AUTOMATION_ID = "n-no-automation"
+_WORKFLOW_DETECTED_ID = "n-workflow-detected"
+_ACTIONS_ID = "n-automation-actions"
 _OPPORTUNITY_ID = "internal-meeting-scheduling"
 
-_FALLBACK_INCOMING: dict[str, Any] = {
-    "sender": "Jordan Lee <jordan.lee@northwind.io>",
-    "recipient": "you@northwind.io",
-    "subject": "Quick sync next week?",
-    "body": "Hi - could we find some time next week to review the Q3 plan?",
-    "requested_duration_minutes": 30,
-}
+_MIN_AUTOMATION_SCORE = 45
 
 _notifications: list[NotificationItem] = []
 _last_workflow: DetectedWorkflow | None = None
@@ -96,22 +91,34 @@ def _to_activation_email(email: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def incoming_email_for_activation() -> dict[str, Any]:
-    if _pending_incoming is not None:
-        return _pending_incoming
-    return _FALLBACK_INCOMING
+def incoming_email_for_activation() -> dict[str, Any] | None:
+    return _pending_incoming
+
+
+def get_last_workflow() -> DetectedWorkflow | None:
+    return _last_workflow
 
 
 def scan_snapshot() -> dict[str, Any]:
+    workflow = _last_workflow
     return {
         "notification_count": len(_notifications),
         "data_source": _last_data_source,
         "initial_scan_done": _initial_scan_done,
-        "pending_email_subject": incoming_email_for_activation().get("subject"),
+        "pending_email_subject": (
+            _pending_incoming.get("subject") if _pending_incoming else None
+        ),
+        "workflow_name": workflow.workflow_name if workflow else None,
+        "automation_available": workflow.automation_available if workflow else None,
+        "automation_summary": workflow.automation_summary if workflow else None,
+        "workflow_category": workflow.workflow_category if workflow else None,
+        "email_count": len(_seen_message_keys),
     }
 
 
 def _recoverable_minutes(workflow: DetectedWorkflow) -> int:
+    if not workflow.automation_available:
+        return 0
     manual = sum(step.avg_minutes for step in workflow.current_steps)
     saved_per_run = max(0.0, manual - 3.0)
     weekly_runs = max(1, workflow.occurrence_count // 4)
@@ -122,6 +129,54 @@ def _sender_display(sender: str) -> str:
     return sender.split("<")[0].strip() or sender
 
 
+def _workflow_is_actionable(workflow: DetectedWorkflow) -> bool:
+    return (
+        workflow.automation_available
+        and workflow.opportunity_score >= _MIN_AUTOMATION_SCORE
+        and workflow.workflow_category != "none"
+    )
+
+
+def _can_one_click_schedule(
+    workflow: DetectedWorkflow,
+    incoming: dict[str, Any] | None,
+) -> bool:
+    return (
+        _workflow_is_actionable(workflow)
+        and workflow.workflow_category == "scheduling"
+        and incoming is not None
+    )
+
+
+def _build_no_automation_notification(
+    workflow: DetectedWorkflow,
+    *,
+    data_source: str,
+) -> NotificationItem:
+    summary = workflow.automation_summary or (
+        "Sloth analysed your inbox but did not find a safe, repeatable "
+        "workflow worth automating right now."
+    )
+    if data_source == "imap":
+        prefix = "After reading your live inbox: "
+    elif data_source == "upload":
+        prefix = "After reading your uploaded emails: "
+    else:
+        prefix = ""
+
+    return NotificationItem(
+        id=_NO_AUTOMATION_ID,
+        title="No automation available",
+        message=f"{prefix}{summary}",
+        created_at=_now_iso(),
+        read=False,
+        opportunity_id=None,
+        recoverable_minutes_per_week=0,
+        action="review",
+        status="pending",
+    )
+
+
 def _build_scheduling_notification(
     workflow: DetectedWorkflow,
     incoming: dict[str, Any],
@@ -129,13 +184,18 @@ def _build_scheduling_notification(
     recoverable = _recoverable_minutes(workflow)
     sender = _sender_display(str(incoming.get("sender", "Someone")))
     subject = str(incoming.get("subject", "a meeting"))
+    actions = workflow.automatable_actions
+    action_hint = (
+        actions[0]
+        if actions
+        else "propose times, draft a reply, and hold a calendar slot"
+    )
     return NotificationItem(
         id=_SCHEDULING_NOTIFICATION_ID,
-        title="New scheduling email — automate reply?",
+        title="Scheduling workflow — automate reply?",
         message=(
-            f"{sender} asked to \"{subject}\". Sloth scored this workflow "
-            f"{workflow.opportunity_score:.0f}/100 and can propose times, "
-            f"draft a reply, and hold a calendar slot."
+            f"{sender} asked about \"{subject}\". Sloth scored this "
+            f"{workflow.opportunity_score:.0f}/100 and can {action_hint}."
         ),
         created_at=_now_iso(),
         read=False,
@@ -147,21 +207,68 @@ def _build_scheduling_notification(
 
 
 def _build_review_notification(workflow: DetectedWorkflow) -> NotificationItem:
+    actions = workflow.automatable_actions
+    action_line = (
+        f" Possible actions: {', '.join(actions[:4])}."
+        if actions
+        else ""
+    )
     return NotificationItem(
-        id="n-workflow-detected",
-        title="Repeated workflow detected",
+        id=_WORKFLOW_DETECTED_ID,
+        title="Workflow detected in your inbox",
         message=(
             f"Found \"{workflow.workflow_name}\" "
-            f"({workflow.occurrence_count} runs). Review the full analysis "
-            f"in the dashboard."
-        ),
+            f"({workflow.occurrence_count} similar instances, "
+            f"score {workflow.opportunity_score:.0f}/100). "
+            f"{workflow.automation_summary or ''}{action_line}"
+        ).strip(),
         created_at=_now_iso(),
         read=False,
-        opportunity_id=_OPPORTUNITY_ID,
+        opportunity_id=_OPPORTUNITY_ID if _workflow_is_actionable(workflow) else None,
         recoverable_minutes_per_week=_recoverable_minutes(workflow),
         action="review",
         status="pending",
     )
+
+
+def _build_actions_notification(workflow: DetectedWorkflow) -> NotificationItem:
+    actions = workflow.automatable_actions[:5]
+    return NotificationItem(
+        id=_ACTIONS_ID,
+        title=f"What Sloth can help with ({workflow.workflow_category})",
+        message=(
+            workflow.automation_summary
+            or "Sloth identified steps that could be assisted with your approval:"
+        )
+        + " "
+        + "; ".join(actions),
+        created_at=_now_iso(),
+        read=False,
+        opportunity_id=_OPPORTUNITY_ID if _workflow_is_actionable(workflow) else None,
+        recoverable_minutes_per_week=_recoverable_minutes(workflow),
+        action="review",
+        status="pending",
+    )
+
+
+def _build_notifications_for_workflow(
+    workflow: DetectedWorkflow,
+    *,
+    data_source: str,
+    incoming: dict[str, Any] | None,
+) -> list[NotificationItem]:
+    if not _workflow_is_actionable(workflow):
+        return [_build_no_automation_notification(workflow, data_source=data_source)]
+
+    items: list[NotificationItem] = [_build_review_notification(workflow)]
+
+    if workflow.automatable_actions and workflow.workflow_category != "scheduling":
+        items.append(_build_actions_notification(workflow))
+
+    if _can_one_click_schedule(workflow, incoming):
+        items.insert(0, _build_scheduling_notification(workflow, incoming))
+
+    return items
 
 
 def run_inbox_scan(*, force_analysis: bool = False) -> dict[str, Any]:
@@ -181,8 +288,7 @@ def run_inbox_scan(*, force_analysis: bool = False) -> dict[str, Any]:
         _seen_message_keys.add(key)
 
     latest = _pick_latest_scheduling_email(raw_emails)
-    if latest is not None:
-        _pending_incoming = _to_activation_email(latest)
+    _pending_incoming = _to_activation_email(latest) if latest else None
 
     has_new_activity = bool(new_keys)
     should_analyze = (
@@ -192,72 +298,105 @@ def run_inbox_scan(*, force_analysis: bool = False) -> dict[str, Any]:
         or _last_workflow is None
     )
 
-    used_demo = True
+    used_demo = data_source == "demo"
     if should_analyze:
-        threads, _ = ingestion_service.get_email_threads(prefer_live=True)
+        threads, thread_source = ingestion_service.get_email_threads(
+            prefer_live=True
+        )
         workflow, used_demo = analysis_service.analyse_workflow_with_meta(threads)
         _last_workflow = workflow
         _initial_scan_done = True
 
         incoming = incoming_email_for_activation()
-        automate = _build_scheduling_notification(workflow, incoming)
-        review = _build_review_notification(workflow)
+        built = _build_notifications_for_workflow(
+            workflow,
+            data_source=data_source,
+            incoming=incoming,
+        )
 
-        # Preserve completed automate notification if user already ran it.
         existing_automate = get_notification(_SCHEDULING_NOTIFICATION_ID)
         if existing_automate is not None and existing_automate.status == "completed":
-            automate = existing_automate
-
-        _notifications = [automate, review]
-        logger.info(
-            "Inbox scan analyzed workflow (source=%s, new_messages=%s)",
-            data_source,
-            len(new_keys),
-        )
-    elif has_new_activity and latest is not None and _last_workflow is not None:
-        incoming = incoming_email_for_activation()
-        updated = _build_scheduling_notification(_last_workflow, incoming)
-        existing = get_notification(_SCHEDULING_NOTIFICATION_ID)
-        if existing is None or existing.status != "completed":
-            _notifications = [
-                updated,
-                *(n for n in _notifications if n.id != _SCHEDULING_NOTIFICATION_ID),
+            built = [
+                existing_automate,
+                *(n for n in built if n.id != _SCHEDULING_NOTIFICATION_ID),
             ]
-            if not any(n.id == "n-workflow-detected" for n in _notifications):
-                _notifications.append(_build_review_notification(_last_workflow))
+
+        _notifications = built
+        logger.info(
+            "Inbox scan analyzed workflow (source=%s, new_messages=%s, "
+            "automation_available=%s)",
+            thread_source,
+            len(new_keys),
+            workflow.automation_available,
+        )
+    elif has_new_activity and _last_workflow is not None:
+        incoming = incoming_email_for_activation()
+        if _can_one_click_schedule(_last_workflow, incoming):
+            updated = _build_scheduling_notification(_last_workflow, incoming)
+            existing = get_notification(_SCHEDULING_NOTIFICATION_ID)
+            if existing is None or existing.status != "completed":
+                _notifications = [
+                    updated,
+                    *(n for n in _notifications if n.id != _SCHEDULING_NOTIFICATION_ID),
+                ]
         logger.info(
             "Inbox scan refreshed scheduling notification (source=%s)", data_source
         )
 
     return {
         "data_source": data_source,
-        "demo_mode": used_demo or data_source == "demo",
+        "demo_mode": used_demo,
         "new_messages": len(new_keys),
         "analyzed": should_analyze,
         "notification_count": len(_notifications),
         "workflow_name": _last_workflow.workflow_name if _last_workflow else None,
+        "automation_available": (
+            _last_workflow.automation_available if _last_workflow else False
+        ),
+        "automation_summary": (
+            _last_workflow.automation_summary if _last_workflow else None
+        ),
     }
 
 
-def bootstrap_prototype() -> PrototypeBootstrapResponse:
-    """Manual scan — same as watcher but returns the bootstrap API shape."""
+def bootstrap_prototype(*, force: bool = False) -> PrototypeBootstrapResponse:
+    """Manual scan — returns cached results instantly unless ``force=True``."""
+    if not force and _initial_scan_done and _last_workflow is not None:
+        return _bootstrap_response(_last_workflow, demo_mode=_last_data_source == "demo")
+
     result = run_inbox_scan(force_analysis=True)
     workflow = _last_workflow
     if workflow is None:
         workflow = analysis_service.analyse_workflow()
 
-    return PrototypeBootstrapResponse(
-        workflow_name=workflow.workflow_name,
-        opportunity_score=workflow.opportunity_score,
-        notifications=list_notifications(),
+    return _bootstrap_response(
+        workflow,
         demo_mode=result["demo_mode"],
         data_source=result["data_source"],
     )
 
 
+def _bootstrap_response(
+    workflow: DetectedWorkflow,
+    *,
+    demo_mode: bool = False,
+    data_source: str | None = None,
+) -> PrototypeBootstrapResponse:
+    return PrototypeBootstrapResponse(
+        workflow_name=workflow.workflow_name,
+        opportunity_score=workflow.opportunity_score,
+        notifications=list_notifications(),
+        demo_mode=demo_mode,
+        data_source=data_source or _last_data_source,
+        automation_available=workflow.automation_available,
+        automation_summary=workflow.automation_summary,
+        workflow_category=workflow.workflow_category,
+        automatable_actions=workflow.automatable_actions,
+        workflow=workflow.model_dump(),
+    )
+
+
 def list_notifications() -> list[NotificationItem]:
-    if not _notifications:
-        return []
     return list(_notifications)
 
 
@@ -276,9 +415,13 @@ def automate_notification(notification_id: str) -> AutomateNotificationResponse:
         raise ValueError(f"Notification {notification_id} is not automatable")
 
     workflow = _last_workflow or analysis_service.analyse_workflow()
+    incoming = incoming_email_for_activation()
+    if incoming is None:
+        raise ValueError("No scheduling email available to automate")
+
     activation: ActivationResponse = activation_service.activate(
         workflow.automation_rules,
-        incoming_email_for_activation(),
+        incoming,
     )
 
     updated = item.model_copy(update={"status": "completed", "read": True})

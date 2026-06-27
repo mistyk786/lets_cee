@@ -240,9 +240,25 @@ export type OverviewSummary = {
     emailsPerMeeting: number;
     monthlyCoordinationHours: number;
   };
+  automationAvailable?: boolean;
+  automatableActions?: string[];
+  workflowCategory?: string;
 };
 
 export type DataSource = "demo" | "imap" | "upload" | "unknown";
+
+export type RecentEmail = {
+  subject: string;
+  sender: string;
+  timestamp: string;
+  preview: string | null;
+};
+
+export type RecentInboxResult = {
+  dataSource: DataSource;
+  count: number;
+  emails: RecentEmail[];
+};
 
 /** Live backend connection + inbox watcher state (GET /api/watcher/status). */
 export type WatcherStatus = {
@@ -260,4 +276,9 @@ export type WatcherStatus = {
   newMessages: number;
   notificationCount: number;
   workflowName: string | null;
+  automationAvailable: boolean | null;
+  automationSummary: string | null;
+  workflowCategory: string | null;
+  initialScanDone: boolean;
+  scanInProgress: boolean;
 };

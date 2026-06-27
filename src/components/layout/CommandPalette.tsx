@@ -65,9 +65,9 @@ export function CommandPalette() {
         action: () => navigate("/insights"),
       },
       {
-        id: "demo",
-        label: "Use Demo Dataset",
-        hint: "Start the analysis journey",
+        id: "optimise",
+        label: "Optimise inbox",
+        hint: "Scan email and find automations",
         icon: Play,
         group: "Actions",
         action: () => navigate("/setup"),

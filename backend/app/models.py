@@ -101,6 +101,11 @@ class PrototypeBootstrapResponse(BaseModel):
     notifications: list[NotificationItem]
     demo_mode: bool
     data_source: str = "demo"  # demo | imap | upload
+    automation_available: bool = True
+    automation_summary: str = ""
+    workflow_category: str = "other"
+    automatable_actions: list[str] = []
+    workflow: dict | None = None
 
 
 class AutomateNotificationResponse(BaseModel):

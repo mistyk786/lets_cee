@@ -67,22 +67,33 @@ export function mapOverviewSummary(
 ): OverviewSummary {
   const manualMinutes = averageManualMinutes(workflow.current_steps);
   const runsPerMonth = workflow.occurrence_count;
+  const available = workflow.automation_available !== false;
 
   return {
     workflowName: workflow.workflow_name,
-    status: "Automation Opportunity Detected",
+    status: available
+      ? "Automation opportunity detected"
+      : "No automation available",
     opportunityScore: Math.round(workflow.opportunity_score),
     explanation:
-      workflow.assumptions[0] ??
-      "High repetition, predictable steps, and strong automation potential.",
+      workflow.automation_summary ||
+      workflow.assumptions[0] ||
+      (available
+        ? "High repetition, predictable steps, and strong automation potential."
+        : "Sloth analysed your inbox but did not find a safe workflow to automate."),
     metrics: {
       runsPerMonth,
       manualMinutesPerRun: Math.round(manualMinutes),
-      averageCompletionDays: 2.8,
-      emailsPerMeeting: 4.2,
+      averageCompletionDays: available && runsPerMonth > 0 ? 2.8 : 0,
+      emailsPerMeeting: available && runsPerMonth > 0 ? 4.2 : 0,
       monthlyCoordinationHours:
-        Math.round(((runsPerMonth * manualMinutes) / 60) * 10) / 10,
+        available && runsPerMonth > 0
+          ? Math.round(((runsPerMonth * manualMinutes) / 60) * 10) / 10
+          : 0,
     },
+    automationAvailable: available,
+    automatableActions: workflow.automatable_actions ?? [],
+    workflowCategory: workflow.workflow_category ?? "other",
   };
 }
 
@@ -99,9 +110,9 @@ export function mapDetectedWorkflowToOpportunity(
     description:
       workflow.assumptions.join(" ") ||
       "Coordinating meetings from email requests through to a confirmed calendar event.",
-    status: "ready_to_review",
+    status: workflow.automation_available !== false ? "ready_to_review" : "detected",
     detectedAt: new Date().toISOString(),
-    sourceSystems: ["email", "calendar"],
+    sourceSystems: ["email"],
     frequency: {
       value: workflow.occurrence_count,
       unit: "month",
@@ -109,8 +120,12 @@ export function mapDetectedWorkflowToOpportunity(
     },
     evidence: {
       repeatedRuns: workflow.occurrence_count,
-      averageEmailsPerRun: 4.2,
-      averageCycleTimeHours: 67,
+      averageEmailsPerRun:
+        workflow.occurrence_count > 0
+          ? Math.max(1, workflow.current_steps.length)
+          : 0,
+      averageCycleTimeHours:
+        workflow.occurrence_count > 0 ? Math.round(manualMinutes * 2) : 0,
       manualMinutesPerRun: Math.round(manualMinutes),
       patternConfidence: Math.min(workflow.opportunity_score / 100, 0.99),
       examples: workflow.assumptions.slice(0, 3),
@@ -118,9 +133,9 @@ export function mapDetectedWorkflowToOpportunity(
     scores: {
       opportunityScore: Math.round(workflow.opportunity_score),
       confidenceScore: Math.round(workflow.opportunity_score * 0.95),
-      repetitionScore: 88,
-      consistencyScore: 82,
-      dataCompletenessScore: 85,
+      repetitionScore: Math.round(workflow.opportunity_score * 0.9),
+      consistencyScore: Math.round(workflow.opportunity_score * 0.85),
+      dataCompletenessScore: Math.round(workflow.opportunity_score * 0.8),
       riskScore: rules.internalOnly ? 18 : 28,
     },
     riskLevel: rules.internalOnly ? "low" : "medium",
@@ -344,6 +359,11 @@ export function mapWatcherStatus(
     newMessages: watcher.new_messages ?? 0,
     notificationCount: watcher.notification_count ?? 0,
     workflowName: watcher.workflow_name ?? null,
+    automationAvailable: watcher.automation_available ?? null,
+    automationSummary: watcher.automation_summary ?? null,
+    workflowCategory: watcher.workflow_category ?? null,
+    initialScanDone: watcher.initial_scan_done ?? false,
+    scanInProgress: watcher.scan_in_progress ?? false,
   };
 }
 
@@ -362,6 +382,11 @@ export function mockWatcherStatus(): WatcherStatus {
     newMessages: 0,
     notificationCount: 0,
     workflowName: null,
+    automationAvailable: null,
+    automationSummary: null,
+    workflowCategory: null,
+    initialScanDone: false,
+    scanInProgress: false,
   };
 }
 
