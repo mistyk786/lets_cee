@@ -1,9 +1,67 @@
-from fastapi import APIRouter, HTTPException, UploadFile
+from fastapi import APIRouter, Header, HTTPException, UploadFile
+from pydantic import BaseModel, Field
 
 from app.models import EmailMessage
 from app.services import ingestion_service
+from app.services.session_service import (
+    SESSION_HEADER,
+    connect_inbox,
+    disconnect_session,
+    get_session,
+    session_public_view,
+)
 
 router = APIRouter()
+
+
+class InboxConnectRequest(BaseModel):
+    email: str
+    app_password: str = Field(min_length=8)
+    provider: str = "gmail"
+
+
+@router.get("/api/inbox/session")
+def inbox_session(
+    x_sloth_session: str | None = Header(default=None, alias="X-Sloth-Session"),
+) -> dict:
+    """Return connected inbox info for the current browser session."""
+    session = get_session(x_sloth_session)
+    if session is None:
+        return {"connected": False}
+    return session_public_view(session)
+
+
+@router.post("/api/inbox/connect")
+def inbox_connect(body: InboxConnectRequest) -> dict:
+    """Connect a user's inbox via IMAP app password (session-scoped, in-memory)."""
+    try:
+        session = connect_inbox(
+            email=body.email,
+            app_password=body.app_password,
+            provider=body.provider,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=401,
+            detail="Could not sign in to that mailbox. Check email, app password, and provider.",
+        ) from exc
+
+    return {
+        "session_id": session.session_id,
+        SESSION_HEADER: session.session_id,
+        **session_public_view(session),
+    }
+
+
+@router.post("/api/inbox/disconnect")
+def inbox_disconnect(
+    x_sloth_session: str | None = Header(default=None, alias="X-Sloth-Session"),
+) -> dict:
+    if not x_sloth_session:
+        return {"disconnected": False}
+    return {"disconnected": disconnect_session(x_sloth_session)}
 
 
 @router.get("/api/ingest/status")

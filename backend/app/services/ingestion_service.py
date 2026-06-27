@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 from typing import Any, Literal
 
 from app.config import Settings, get_settings
+from app.request_context import get_effective_settings
 from app.services.dataset_service import load_demo_calendar, load_demo_emails
 from app.services.email_normaliser import normalise_threads
 from app.services.imap_service import fetch_recent_emails, imap_configured
@@ -38,11 +39,24 @@ def clear_uploads() -> None:
     _uploaded_calendar = None
 
 
+def _mask_email(email: str) -> str:
+    local, _, domain = email.partition("@")
+    if not domain:
+        return email
+    visible = local[:2] if len(local) > 2 else local[:1]
+    return f"{visible}***@{domain}"
+
+
 def ingestion_status(settings: Settings | None = None) -> dict[str, Any]:
     active = settings or get_settings()
+    server_imap = imap_configured(active)
     return {
         "cursor_configured": active.cursor_configured,
-        "imap_configured": imap_configured(active),
+        "imap_configured": server_imap,
+        "demo_inbox_available": server_imap,
+        "server_imap_email_masked": (
+            _mask_email(active.imap_user) if server_imap and active.imap_user else None
+        ),
         "uploaded_emails": bool(_uploaded_emails),
         "uploaded_calendar": bool(_uploaded_calendar),
         "demo_available": True,
@@ -63,13 +77,25 @@ def get_raw_emails(
     if prefer_live and _uploaded_emails:
         return _uploaded_emails, "upload"
 
-    active = settings or get_settings()
+    active = settings or get_effective_settings()
     if prefer_live and imap_configured(active):
         try:
+            per_mailbox = max(40, (active.imap_max_messages or 80) // 2)
             fetched = fetch_recent_emails(
                 settings=active,
                 scheduling_only=False,
+                max_messages=per_mailbox,
+                direction="received",
             )
+            if active.imap_sent_mailbox:
+                sent = fetch_recent_emails(
+                    settings=active,
+                    scheduling_only=False,
+                    max_messages=per_mailbox,
+                    direction="sent",
+                    mailbox=active.imap_sent_mailbox,
+                )
+                fetched = fetched + sent
             return fetched, "imap"
         except Exception:
             # IMAP configured but failed — do not silently substitute demo data.

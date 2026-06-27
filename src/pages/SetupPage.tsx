@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Mail,
@@ -13,10 +13,18 @@ import {
 import { api } from "@/lib/api";
 import { useApp } from "@/context/AppContext";
 import type { WatcherStatus } from "@/lib/types";
+import {
+  applyInboxMode,
+  getInboxMode,
+  type InboxMode,
+} from "@/lib/inboxMode";
 import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
 import { WatcherStatusPanel } from "@/components/layout/WatcherStatusPanel";
 import { RecentInboxPanel } from "@/components/inbox/RecentInboxPanel";
+import { ConnectInboxPanel } from "@/components/inbox/ConnectInboxPanel";
+import { DemoInboxPanel } from "@/components/inbox/DemoInboxPanel";
+import { InboxModeSelector } from "@/components/inbox/InboxModeSelector";
 
 const ANALYSIS_STEPS = [
   "Reading recent inbox messages…",
@@ -27,6 +35,7 @@ const ANALYSIS_STEPS = [
 
 export function SetupPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const {
     loadDemo,
     watcherStatus,
@@ -39,7 +48,32 @@ export function SetupPage() {
   const [elapsedSec, setElapsedSec] = useState(0);
   const [liveStatus, setLiveStatus] = useState<WatcherStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [inboxMode, setInboxModeState] = useState<InboxMode>(() => getInboxMode());
+  const [ownInboxConnected, setOwnInboxConnected] = useState(false);
+  const [demoAvailable, setDemoAvailable] = useState(true);
   const live = api.isLive();
+
+  const setInboxMode = useCallback(async (mode: InboxMode) => {
+    await applyInboxMode(mode, () => api.disconnectInbox());
+    setInboxModeState(mode);
+    setOwnInboxConnected(false);
+    await refreshWatcherStatus();
+  }, [refreshWatcherStatus]);
+
+  useEffect(() => {
+    const param = searchParams.get("mode");
+    if (param === "demo" || param === "own") {
+      void setInboxMode(param);
+    }
+  }, [searchParams, setInboxMode]);
+
+  useEffect(() => {
+    if (!live) return;
+    api.getDemoInboxInfo().then((info) => setDemoAvailable(info.available));
+    if (inboxMode === "own") {
+      api.getInboxSession().then((s) => setOwnInboxConnected(s.connected));
+    }
+  }, [live, inboxMode]);
 
   useEffect(() => {
     if (!analysing) return;
@@ -60,6 +94,15 @@ export function SetupPage() {
   }
 
   async function handleAnalyse() {
+    if (live && inboxMode === "own" && !ownInboxConnected) {
+      setError("Connect your inbox first, or switch to Try demo inbox.");
+      return;
+    }
+    if (live && inboxMode === "demo" && !demoAvailable) {
+      setError("Demo inbox is not available on this server. Use your own email instead.");
+      return;
+    }
+
     setAnalysing(true);
     setStepIndex(0);
     setElapsedSec(0);
@@ -101,6 +144,11 @@ export function SetupPage() {
       liveStatus?.initialScanDone ||
       watcherStatus?.initialScanDone);
 
+  const scanReady =
+    !live ||
+    (inboxMode === "demo" && demoAvailable) ||
+    (inboxMode === "own" && ownInboxConnected);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-moss-50/50 to-white">
       <header className="mx-auto flex max-w-4xl items-center justify-between px-6 py-5">
@@ -129,18 +177,34 @@ export function SetupPage() {
                   Optimise your inbox
                 </h1>
                 <p className="mt-2 text-ink-500">
-                  Sloth reads your recent email, finds repeatable work (meetings,
-                  follow-ups, approvals, reports, and more), and tells you
-                  honestly what can — and cannot — be automated safely.
+                  Choose demo or your own mail — Sloth finds repeatable work and
+                  tells you honestly what can be automated safely.
                 </p>
               </div>
 
               <div className="mt-8 space-y-4">
+                {live && (
+                  <>
+                    <InboxModeSelector
+                      mode={inboxMode}
+                      demoAvailable={demoAvailable}
+                      onChange={(mode) => void setInboxMode(mode)}
+                    />
+                    {inboxMode === "demo" ? (
+                      <DemoInboxPanel />
+                    ) : (
+                      <ConnectInboxPanel
+                        onConnected={() => setOwnInboxConnected(true)}
+                      />
+                    )}
+                  </>
+                )}
+
                 <WatcherStatusPanel status={watcherStatus} compact />
 
-                {live && <RecentInboxPanel limit={8} />}
+                {live && scanReady && <RecentInboxPanel limit={8} />}
 
-                {watcherStatus?.initialScanDone && live && (
+                {watcherStatus?.initialScanDone && live && scanReady && (
                   <div className="rounded-xl border border-moss-200 bg-moss-50 px-4 py-3 text-sm text-moss-800">
                     Inbox already scanned — clicking analyse should be instant.
                   </div>
@@ -158,10 +222,20 @@ export function SetupPage() {
                       What happens on scan
                     </p>
                     <ul className="mt-3 space-y-2 text-sm text-ink-700">
-                      <li>• Reads your real inbox via IMAP (no OAuth)</li>
-                      <li>• AI detects repeated workflows across email types</li>
-                      <li>• Shows “no automation available” if nothing qualifies</li>
-                      <li>• First AI scan may take up to 2 minutes</li>
+                      {inboxMode === "demo" ? (
+                        <>
+                          <li>• Analyses the shared demo Gmail (no login needed)</li>
+                          <li>• Reads inbox + sent mail for repeated subjects</li>
+                          <li>• AI cites exact patterns from those messages</li>
+                        </>
+                      ) : (
+                        <>
+                          <li>• Uses your connected inbox only</li>
+                          <li>• Reads inbox + sent mail for repeated subjects</li>
+                          <li>• Your app password stays in memory for this session</li>
+                        </>
+                      )}
+                      <li>• First scan may take up to 2 minutes</li>
                     </ul>
                   </div>
                 ) : (
@@ -205,11 +279,11 @@ export function SetupPage() {
               </div>
 
               <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-                <Button size="lg" onClick={handleAnalyse}>
+                <Button size="lg" onClick={handleAnalyse} disabled={live && !scanReady}>
                   Scan &amp; optimise
                   <ArrowRight size={18} />
                 </Button>
-                {live && watcherStatus?.initialScanDone && (
+                {live && watcherStatus?.initialScanDone && scanReady && (
                   <Button
                     size="lg"
                     variant="secondary"
@@ -219,6 +293,13 @@ export function SetupPage() {
                   </Button>
                 )}
               </div>
+              {live && !scanReady && (
+                <p className="mt-3 text-center text-sm text-ink-500">
+                  {inboxMode === "own"
+                    ? "Connect your inbox above to enable scanning."
+                    : "Demo inbox is unavailable — switch to Use your email."}
+                </p>
+              )}
             </motion.div>
           ) : (
             <motion.div
@@ -234,7 +315,8 @@ export function SetupPage() {
                 </span>
               </div>
               <h2 className="mt-6 text-xl font-bold text-ink-900">
-                SLOTH is reading your inbox…
+                SLOTH is reading{" "}
+                {inboxMode === "demo" ? "the demo inbox" : "your inbox"}…
               </h2>
               <p className="mt-2 text-sm text-ink-500">
                 AI analysis in progress ({elapsedSec}s). Usually 30–90 seconds;

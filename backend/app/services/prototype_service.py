@@ -20,6 +20,7 @@ from app.models import (
 )
 from app.schemas import DetectedWorkflow
 from app.services import activation_service, analysis_service, ingestion_service
+from app.services.pattern_service import enrich_workflow_summary, patterns_from_raw
 from app.services.imap_service import looks_like_scheduling
 
 logger = logging.getLogger(__name__)
@@ -304,6 +305,20 @@ def run_inbox_scan(*, force_analysis: bool = False) -> dict[str, Any]:
             prefer_live=True
         )
         workflow, used_demo = analysis_service.analyse_workflow_with_meta(threads)
+        pattern_report = patterns_from_raw(raw_emails)
+        highlights = pattern_report.get("highlights") or []
+        if highlights:
+            merged_patterns = list(dict.fromkeys([*workflow.detected_patterns, *highlights]))[
+                :10
+            ]
+            workflow = workflow.model_copy(
+                update={
+                    "detected_patterns": merged_patterns,
+                    "automation_summary": enrich_workflow_summary(
+                        workflow.automation_summary, pattern_report
+                    ),
+                }
+            )
         _last_workflow = workflow
         _initial_scan_done = True
 

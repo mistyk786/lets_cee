@@ -130,6 +130,8 @@ def fetch_recent_emails(
     settings: Settings | None = None,
     max_messages: int | None = None,
     scheduling_only: bool = True,
+    direction: str = "received",
+    mailbox: str | None = None,
 ) -> list[dict[str, Any]]:
     """Fetch recent inbox messages and return demo-compatible email dicts.
 
@@ -143,7 +145,7 @@ def fetch_recent_emails(
         )
 
     limit = max_messages or active.imap_max_messages
-    mailbox = active.imap_mailbox or "INBOX"
+    mailbox = mailbox or active.imap_mailbox or "INBOX"
 
     conn = imaplib.IMAP4_SSL(active.imap_host, active.imap_port)
     try:
@@ -217,6 +219,7 @@ def fetch_recent_emails(
                     "recipient": info["recipient"],
                     "timestamp": info["timestamp"],
                     "body": body[:4000],
+                    "direction": direction,
                 }
             )
 

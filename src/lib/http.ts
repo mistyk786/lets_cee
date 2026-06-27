@@ -25,6 +25,8 @@ export class ApiError extends Error {
   }
 }
 
+import { inboxRequestHeaders } from "./inboxMode";
+
 type FetchOptions<T> = Omit<RequestInit, "body"> & {
   body?: unknown;
   /** Transform raw JSON from the backend into the frontend type. */
@@ -50,6 +52,7 @@ export async function fetchWithFallback<T>(
     headers: {
       Accept: "application/json",
       ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
+      ...inboxRequestHeaders(),
       ...headers,
     },
     body: body !== undefined ? JSON.stringify(body) : undefined,
