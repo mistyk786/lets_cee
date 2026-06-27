@@ -34,6 +34,29 @@ export function formatDate(iso: string): string {
   });
 }
 
+/** Readable slot range for draft replies, e.g. ``29/6/2026 5:00pm to 5:30pm``. */
+export function formatSlotRange(startIso: string, endIso: string): string {
+  const start = new Date(startIso);
+  const end = new Date(endIso);
+  const fmtTime = (d: Date) => {
+    const h = d.getHours();
+    const m = d.getMinutes();
+    const period = h < 12 ? "am" : "pm";
+    const h12 = h % 12 || 12;
+    return m === 0 ? `${h12}${period}` : `${h12}:${String(m).padStart(2, "0")}${period}`;
+  };
+  const datePart = `${start.getDate()}/${start.getMonth() + 1}/${start.getFullYear()}`;
+  const sameDay =
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === end.getMonth() &&
+    start.getDate() === end.getDate();
+  if (sameDay) {
+    return `${datePart} ${fmtTime(start)} to ${fmtTime(end)}`;
+  }
+  const endDatePart = `${end.getDate()}/${end.getMonth() + 1}/${end.getFullYear()}`;
+  return `${datePart} ${fmtTime(start)} to ${endDatePart} ${fmtTime(end)}`;
+}
+
 export function frequencyLabel(freq: {
   value: number;
   unit: "day" | "week" | "month";
