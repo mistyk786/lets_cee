@@ -643,6 +643,8 @@ export const notifications: SlothNotification[] = [
     read: false,
     opportunityId: "meeting-rescheduling",
     recoverableMinutesPerWeek: 48,
+    action: "automate",
+    status: "pending",
   },
   {
     id: "n2",

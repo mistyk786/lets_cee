@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
 from app.config import Settings, reset_settings_cache
 from app.engine import SlothEngine
-from app.schemas import EffectivenessInputs, ForecastInputs, OpportunityInputs
+from app.schemas import OpportunityInputs
 
 
 @pytest.fixture(autouse=True)
@@ -19,20 +18,24 @@ def _clear_settings_cache():
     reset_settings_cache()
 
 
-def test_health_ok_when_openai_configured():
+def test_health_ok_when_cursor_configured():
     engine = SlothEngine(
-        settings=Settings(openai_api_key="test-key", environment="test")
+        settings=Settings(cursor_api_key="test-key", environment="test")
     )
     health = engine.health()
     assert health.status == "ok"
+    assert health.cursor_configured is True
     assert health.openai_configured is True
     assert health.demo_available is True
 
 
-def test_health_degraded_without_openai():
-    engine = SlothEngine(settings=Settings(environment="test"))
+def test_health_degraded_without_cursor():
+    engine = SlothEngine(
+        settings=Settings(environment="test", cursor_api_key=None, openai_api_key=None)
+    )
     health = engine.health()
     assert health.status == "degraded"
+    assert health.cursor_configured is False
     assert health.openai_configured is False
 
 
@@ -86,28 +89,26 @@ def test_score_opportunity_via_engine():
 
 
 def test_analyze_marks_demo_mode_on_silent_fallback():
-    # No API key -> extraction fails -> demo data returned -> demo_mode must be True.
-    engine = SlothEngine(settings=Settings(environment="test"))
+    engine = SlothEngine(
+        settings=Settings(environment="test", cursor_api_key=None, openai_api_key=None)
+    )
     result = engine.analyze([{"subject": "sync"}], demo_mode=False)
     assert result.demo_mode is True
     assert result.workflow.workflow_name == "Email-to-Calendar Meeting Scheduling"
 
 
-def test_analyze_live_path_with_mock_openai():
+def test_analyze_live_path_with_mock_cursor():
     engine = SlothEngine(
-        settings=Settings(openai_api_key="test-key", environment="test")
+        settings=Settings(cursor_api_key="test-key", environment="test")
     )
     demo = engine.detect_workflow([], demo_mode=True)
-    mock_response = MagicMock()
-    mock_response.choices = [
-        MagicMock(message=MagicMock(content=json.dumps(demo.model_dump())))
-    ]
-    mock_client = MagicMock()
-    mock_client.chat.completions.create.return_value = mock_response
 
-    with patch("openai.OpenAI", return_value=mock_client):
+    with patch(
+        "app.services.workflow_service.complete_json_prompt",
+        return_value=demo.model_dump(),
+    ):
         result = engine.analyze([{"subject": "sync"}], auto_forecast=True)
 
-    assert result.demo_mode is False  # live extraction succeeded
+    assert result.demo_mode is False
     assert result.workflow.workflow_name == demo.workflow_name
     assert result.forecast is not None

@@ -74,21 +74,60 @@ export type BackendDemoDataRaw = {
 
 export type BackendTentativeEvent = {
   title?: string;
+  event_id?: string;
+  start_time?: string;
+  end_time?: string;
   start?: string;
   end?: string;
   status?: string;
 };
 
+export type BackendTimeSlot = {
+  start_time: string;
+  end_time: string;
+};
+
 export type BackendAutomationRun = {
+  run_id?: string;
   id?: string;
   status?: string;
+  activated_at?: string;
   created_at?: string;
+  email_subject?: string;
+  proposed_slot_count?: number;
+  created_event_id?: string;
 };
 
 /** POST /api/activate-automation */
 export type BackendActivationResponse = {
   draft_reply?: string;
-  proposed_slots?: string[];
+  processed_email_subject?: string;
+  proposed_slots?: BackendTimeSlot[] | string[];
   tentative_event?: BackendTentativeEvent;
   run?: BackendAutomationRun;
+  rules?: BackendAutomationRule;
+};
+
+export type BackendNotificationItem = {
+  id: string;
+  title: string;
+  message: string;
+  created_at: string;
+  read: boolean;
+  opportunity_id?: string;
+  recoverable_minutes_per_week?: number;
+  action?: "automate" | "review";
+  status?: "pending" | "completed";
+};
+
+export type BackendAutomateNotificationResponse = {
+  notification: BackendNotificationItem;
+  activation: BackendActivationResponse;
+};
+
+export type BackendPrototypeBootstrapResponse = {
+  workflow_name: string;
+  opportunity_score: number;
+  notifications: BackendNotificationItem[];
+  demo_mode: boolean;
 };

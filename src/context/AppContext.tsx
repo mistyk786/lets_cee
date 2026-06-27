@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import { api } from "@/lib/api";
+import { isBackendConfigured } from "@/lib/http";
 import type {
   ActiveAutomation,
   AutomationRule,
@@ -31,6 +32,9 @@ type AppState = {
   draftRules: Record<string, AutomationRule>;
   setDraftRules: (opportunityId: string, rules: AutomationRule) => void;
 
+  setNotifications: (items: SlothNotification[]) => void;
+  refreshNotifications: () => Promise<void>;
+
   assistantOpen: boolean;
   setAssistantOpen: (open: boolean) => void;
 
@@ -52,9 +56,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
+  const refreshNotifications = async () => {
+    const items = await api.getNotifications();
+    setNotifications(items);
+  };
+
   useEffect(() => {
-    api.getNotifications().then(setNotifications);
     api.getActiveAutomations().then(setActiveAutomations);
+  }, []);
+
+  useEffect(() => {
+    if (!isBackendConfigured()) {
+      api.getNotifications().then(setNotifications);
+      return;
+    }
+
+    void refreshNotifications();
+    const interval = window.setInterval(() => {
+      void refreshNotifications();
+    }, 15_000);
+
+    return () => window.clearInterval(interval);
   }, []);
 
   const markNotificationRead = (id: string) =>
@@ -86,6 +108,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addActiveAutomation,
       draftRules,
       setDraftRules,
+      setNotifications,
+      refreshNotifications,
       assistantOpen,
       setAssistantOpen,
       commandPaletteOpen,

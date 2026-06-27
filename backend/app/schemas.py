@@ -51,7 +51,8 @@ class HealthStatus(BaseModel):
     status: Literal["ok", "degraded"]
     version: str
     environment: str
-    openai_configured: bool
+    cursor_configured: bool
+    openai_configured: bool  # deprecated alias; mirrors cursor_configured
     demo_available: bool = True
     message: str
 

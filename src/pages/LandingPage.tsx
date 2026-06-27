@@ -51,7 +51,7 @@ export function LandingPage() {
               How it works
             </Button>
             <Button size="sm" onClick={() => navigate("/setup")}>
-              Use Demo Dataset
+              Start prototype
             </Button>
           </div>
         </div>

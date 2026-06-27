@@ -7,12 +7,14 @@ import { OpportunitiesPage } from "@/pages/OpportunitiesPage";
 import { OpportunityDetailPage } from "@/pages/OpportunityDetailPage";
 import { ActiveAutomationsPage } from "@/pages/ActiveAutomationsPage";
 import { EffectivenessPage } from "@/pages/EffectivenessPage";
+import { AutomatePage } from "@/pages/AutomatePage";
 
 export default function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/setup" element={<SetupPage />} />
+      <Route path="/automate/:notificationId" element={<AutomatePage />} />
       <Route element={<AppShell />}>
         <Route path="/overview" element={<OverviewPage />} />
         <Route path="/opportunities" element={<OpportunitiesPage />} />

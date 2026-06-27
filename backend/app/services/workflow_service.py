@@ -1,26 +1,26 @@
 """Workflow extraction service for Sloth.ai.
 
-Calls OpenAI with a structured prompt to detect repeated scheduling-related
-workflows from raw email threads, then validates the response against the
-shared schema. Any failure falls back to demo data so the demo never breaks.
+Calls the Cursor Cloud Agents API with a structured prompt to detect repeated
+scheduling-related workflows from raw email threads, then validates the
+response against the shared schema. Any failure falls back to demo data so the
+demo never breaks.
 """
 
 from __future__ import annotations
 
-import json
 import logging
 
 from app.config import Settings, get_settings
-from app.constants import DEFAULT_OPENAI_MAX_TOKENS, DEFAULT_OPENAI_MODEL
+from app.constants import DEFAULT_CURSOR_MODEL
 from app.schemas import DetectedWorkflow
 from app.services.automation_service import generate_automation_proposal
+from app.services.cursor_service import complete_json_prompt
 from app.services.demo_data import load_demo_workflow
 
 logger = logging.getLogger(__name__)
 
 # Re-exported for tests and backward compatibility.
-MODEL = DEFAULT_OPENAI_MODEL
-MAX_TOKENS = DEFAULT_OPENAI_MAX_TOKENS
+MODEL = DEFAULT_CURSOR_MODEL
 
 SYSTEM_PROMPT = """\
 You are a workflow analyst for Sloth.ai. You analyse raw email threads to \
@@ -74,16 +74,6 @@ current_steps and bottlenecks.\
 """
 
 
-def _build_client(settings: Settings):
-    """Construct an OpenAI client. Imported lazily so the module loads even
-    when the SDK or API key is absent (e.g. in CI running only scoring tests)."""
-    from openai import OpenAI
-
-    if not settings.openai_configured:
-        raise RuntimeError("OPENAI_API_KEY is not set")
-    return OpenAI(api_key=settings.openai_api_key)
-
-
 def _apply_rule_based_proposal(workflow: DetectedWorkflow) -> DetectedWorkflow:
     return workflow.model_copy(
         update={"automation_proposal": generate_automation_proposal(workflow)}
@@ -108,26 +98,17 @@ def extract_workflow_with_meta(
         logger.info("extract_workflow running in explicit demo mode")
         return load_demo_workflow(), True
 
+    if not active_settings.cursor_configured:
+        logger.warning("extract_workflow falling back to demo data: no Cursor API key")
+        return load_demo_workflow(), True
+
     try:
-        client = _build_client(active_settings)
-
-        user_message = json.dumps({"email_threads": email_threads})
-
-        response = client.chat.completions.create(
-            model=active_settings.openai_model,
-            max_tokens=active_settings.openai_max_tokens,
-            response_format={"type": "json_object"},
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": user_message},
-            ],
+        payload = complete_json_prompt(
+            system_prompt=SYSTEM_PROMPT,
+            user_payload={"email_threads": email_threads},
+            settings=active_settings,
         )
-
-        content = response.choices[0].message.content
-        if not content:
-            raise ValueError("OpenAI returned empty content")
-
-        workflow = DetectedWorkflow.model_validate(json.loads(content.strip()))
+        workflow = DetectedWorkflow.model_validate(payload)
         return _apply_rule_based_proposal(workflow), False
     except Exception as exc:  # noqa: BLE001 - any failure -> safe fallback
         logger.warning(
@@ -142,9 +123,9 @@ def extract_workflow(
     demo_mode: bool = False,
     settings: Settings | None = None,
 ) -> DetectedWorkflow:
-    """Detect a repeated workflow from raw email threads.
+    """Detect a repeated workflow from raw email thread dicts.
 
-    Calls OpenAI with a structured prompt and validates the JSON response
+    Calls Cursor with a structured prompt and validates the JSON response
     against ``DetectedWorkflow``. On any API or parse failure, returns
     ``load_demo_workflow()`` so downstream consumers always get valid data.
 
