@@ -58,6 +58,12 @@ class Settings(BaseSettings):
         le=3600,
     )
 
+    cors_origins: str | None = Field(
+        default=None,
+        alias="CORS_ORIGINS",
+        description="Comma-separated frontend origins for CORS (production deploy URL).",
+    )
+
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
     environment: str = Field(default="development", alias="SLOTH_ENV")
 
@@ -78,6 +84,19 @@ class Settings(BaseSettings):
     def openai_configured(self) -> bool:
         """Backward-compatible alias for ``cursor_configured``."""
         return self.cursor_configured
+
+    def cors_origin_list(self) -> list[str]:
+        """Parse ``CORS_ORIGINS`` env var; fall back to local Vite dev ports."""
+        defaults = [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:5174",
+            "http://127.0.0.1:5174",
+        ]
+        if not self.cors_origins:
+            return defaults
+        extra = [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+        return list(dict.fromkeys(defaults + extra))
 
 
 @lru_cache
