@@ -19,6 +19,7 @@ import {
 import { api } from "@/lib/api";
 import { useApp } from "@/context/AppContext";
 import type {
+  ActivationPreview,
   AutomationRule,
   Forecast,
   OptimisationOpportunity,
@@ -70,6 +71,8 @@ export function OpportunityDetailPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [activating, setActivating] = useState(false);
   const [activated, setActivated] = useState(false);
+  const [activationPreview, setActivationPreview] =
+    useState<ActivationPreview | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -109,10 +112,14 @@ export function OpportunityDetailPage() {
   async function handleActivate() {
     if (!opp || !rules) return;
     setActivating(true);
-    const automation = await api.activateAutomation(opp.id, rules);
-    automation.name = automationName;
-    automation.runsCompleted = 0;
-    addActiveAutomation(automation);
+    const { automation, preview } = await api.activateAutomation(opp.id, rules);
+    const active = {
+      ...automation,
+      name: automationName,
+      runsCompleted: 0,
+    };
+    addActiveAutomation(active);
+    setActivationPreview(preview ?? null);
     setActivating(false);
     setModalOpen(false);
     setActivated(true);
@@ -180,6 +187,8 @@ export function OpportunityDetailPage() {
       {activated && (
         <ActivationSuccess
           name={automationName}
+          preview={activationPreview}
+          approvalMode={rules.approvalMode}
           onViewPerformance={() => navigate(`/effectiveness/${opp.id}`)}
         />
       )}
@@ -492,53 +501,77 @@ export function OpportunityDetailPage() {
 
 function ActivationSuccess({
   name,
+  preview,
+  approvalMode,
   onViewPerformance,
 }: {
   name: string;
+  preview: ActivationPreview | null;
+  approvalMode: AutomationRule["approvalMode"];
   onViewPerformance: () => void;
 }) {
+  const slotCount = preview?.slotCount ?? preview?.proposedSlots?.length ?? 3;
+  const triggerLabel =
+    preview?.triggerLabel ?? "New scheduling email detected";
+  const slotsLabel = `${slotCount} suitable slot${slotCount === 1 ? "" : "s"} prepared`;
+  const approvalLabel =
+    approvalMode === "draft"
+      ? "Draft reply saved for review"
+      : approvalMode === "trusted_internal_auto_send"
+        ? "Reply queued for trusted internal send"
+        : "Draft reply ready for your approval";
+  const isLivePreview = Boolean(preview?.draftReply || preview?.proposedSlots?.length);
+
   return (
     <div className="overflow-hidden rounded-2xl border border-moss-200 bg-gradient-to-br from-moss-50 to-white shadow-soft animate-fade-in">
       <div className="flex items-center gap-3 border-b border-moss-100 px-5 py-4">
         <CheckCircle2 size={22} className="text-moss-600" />
         <div>
           <p className="font-semibold text-ink-900">
-            Automation activated in approval mode.
+            Automation activated in {APPROVAL_MODE_LABELS[approvalMode]} mode.
           </p>
           <p className="text-sm text-ink-500">{name} is now watching for matching work.</p>
         </div>
       </div>
       <div className="p-5">
         <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-ink-400">
-          Simulated next action
+          {isLivePreview ? "Next action preview" : "Simulated next action"}
         </p>
         <div className="grid gap-3 sm:grid-cols-3">
-          <SimStep
-            icon={MailCheck}
-            title="New scheduling email detected"
-            tone="#3d8c62"
-          />
-          <SimStep
-            icon={CalendarPlus}
-            title="3 suitable slots prepared"
-            tone="#2f7fae"
-          />
-          <SimStep
-            icon={ShieldCheck}
-            title="Draft reply ready for your approval"
-            tone="#b9863f"
-          />
+          <SimStep icon={MailCheck} title={triggerLabel} tone="#3d8c62" />
+          <SimStep icon={CalendarPlus} title={slotsLabel} tone="#2f7fae" />
+          <SimStep icon={ShieldCheck} title={approvalLabel} tone="#b9863f" />
         </div>
+        {preview?.draftReply && (
+          <div className="mt-4 rounded-xl border border-ink-100 bg-white p-4">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-400">
+              Draft reply
+            </p>
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink-700">
+              {preview.draftReply}
+            </p>
+          </div>
+        )}
+        {preview?.tentativeEventTitle && (
+          <p className="mt-3 text-sm text-ink-600">
+            Tentative calendar hold:{" "}
+            <span className="font-medium text-ink-800">
+              {preview.tentativeEventTitle}
+            </span>
+          </p>
+        )}
         <div className="mt-4 flex flex-wrap gap-3">
           <Button onClick={onViewPerformance}>
             View performance
             <ArrowRight size={16} />
           </Button>
         </div>
-        <p className="mt-3 text-xs text-ink-400">
-          This is a simulated preview. No email is sent and no calendar event is
-          created.
-        </p>
+        {!isLivePreview && (
+          <p className="mt-3 text-xs text-ink-400">
+            This is a simulated preview. No email is sent and no calendar event is
+            created.
+          </p>
+        )}
       </div>
     </div>
   );

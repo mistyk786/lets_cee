@@ -1,28 +1,30 @@
 /**
  * SLOTH frontend API adapter.
  *
- * This is the single seam between the UI and data. Today every method returns
- * typed mock data after a small simulated latency. To go live, a backend dev
- * replaces each function body with a real `fetch(...)` to the matching endpoint
- * documented in `ENDPOINTS` — no component changes required.
- *
- * Future endpoints (see README):
- *   GET  /api/demo-data
- *   POST /api/analyse-workflow
- *   POST /api/generate-automation
- *   POST /api/forecast
- *   POST /api/activate-automation
- *   GET  /api/effectiveness
- *   GET  /api/opportunities
- *   GET  /api/opportunities/{id}
- *   POST /api/opportunities/{id}/review
- *   POST /api/opportunities/{id}/configure
- *   POST /api/opportunities/{id}/activate
- *   POST /api/opportunities/{id}/pause
- *   GET  /api/opportunities/{id}/metrics
- *   GET  /api/notifications
+ * Single seam between UI and data. When VITE_API_BASE_URL is set, each method
+ * calls the real backend and maps snake_case responses → frontend types.
+ * On any failure (or when VITE_USE_MOCK_API=true), falls back to mock data.
  */
 
+import type {
+  BackendActivationResponse,
+  BackendDemoDataRaw,
+  BackendDetectedWorkflow,
+  BackendEffectivenessMetrics,
+  BackendForecastMetrics,
+  BackendWorkflowStep,
+} from "./backend/types";
+import { fetchWithFallback, isBackendConfigured } from "./http";
+import {
+  mapActivationResponse,
+  mapDemoDataRaw,
+  mapDetectedWorkflowToOpportunity,
+  mapEffectiveness,
+  mapForecast,
+  mapOverviewSummary,
+  mergeOpportunityWithMock,
+  toBackendAutomationRule,
+} from "./mappers";
 import {
   activeAutomations,
   assistantInsights,
@@ -34,6 +36,7 @@ import {
 } from "./mockData";
 import { delay, previewSavings } from "./utils";
 import type {
+  ActivateAutomationResult,
   ActiveAutomation,
   AssistantContext,
   AssistantInsight,
@@ -44,6 +47,7 @@ import type {
   OptimisationOpportunity,
   OverviewSummary,
   SlothNotification,
+  WorkflowStep,
 } from "./types";
 
 export const ENDPOINTS = {
@@ -63,114 +67,253 @@ export const ENDPOINTS = {
   notifications: "/api/notifications",
 } as const;
 
-// Small simulated latency so loading states are demonstrable.
 const LATENCY = 350;
+
+let lastDetectedWorkflow: BackendDetectedWorkflow | null = null;
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
+async function mockDelay(ms = LATENCY): Promise<void> {
+  if (!isBackendConfigured()) {
+    await delay(ms);
+  }
+}
+
 export const api = {
+  isLive: () => isBackendConfigured(),
+
+  getLastAnalysis: (): BackendDetectedWorkflow | null => lastDetectedWorkflow,
+
   async getDemoData(): Promise<DemoDataset> {
-    await delay(LATENCY);
-    return clone(demoDataset);
+    return fetchWithFallback<DemoDataset>(
+      ENDPOINTS.demoData,
+      async () => {
+        await mockDelay();
+        return clone(demoDataset);
+      },
+      {
+        map: (raw) => mapDemoDataRaw(raw as BackendDemoDataRaw),
+      }
+    );
   },
 
-  /** Simulates the longer "mapping your workflow" analysis step. */
   async analyseWorkflow(): Promise<OverviewSummary> {
-    await delay(1400);
-    return clone(overviewSummary);
+    return fetchWithFallback<OverviewSummary>(
+      ENDPOINTS.analyseWorkflow,
+      async () => {
+        await delay(1400);
+        return clone(overviewSummary);
+      },
+      {
+        method: "POST",
+        body: {},
+        map: (raw) => {
+          lastDetectedWorkflow = raw as BackendDetectedWorkflow;
+          return mapOverviewSummary(lastDetectedWorkflow);
+        },
+      }
+    );
   },
 
   async getOverview(): Promise<OverviewSummary> {
-    await delay(LATENCY);
-    return clone(overviewSummary);
+    if (lastDetectedWorkflow) {
+      return mapOverviewSummary(lastDetectedWorkflow);
+    }
+    return fetchWithFallback<OverviewSummary>(
+      ENDPOINTS.analyseWorkflow,
+      async () => {
+        await mockDelay();
+        return clone(overviewSummary);
+      }
+    );
   },
 
   async getOpportunities(): Promise<OptimisationOpportunity[]> {
-    await delay(LATENCY);
+    await mockDelay();
     return clone(opportunities);
   },
 
   async getOpportunity(id: string): Promise<OptimisationOpportunity | null> {
-    await delay(LATENCY);
-    const found = opportunities.find((o) => o.id === id);
-    return found ? clone(found) : null;
+    const mock = opportunities.find((o) => o.id === id);
+    const mockClone = mock ? clone(mock) : null;
+
+    if (isBackendConfigured()) {
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "")}${ENDPOINTS.opportunity(id)}`
+        );
+        if (res.ok) {
+          const raw: unknown = await res.json();
+          if (raw && typeof raw === "object" && "workflowName" in raw) {
+            return raw as OptimisationOpportunity;
+          }
+          if (raw && typeof raw === "object" && "workflow_name" in raw) {
+            const mapped = mapDetectedWorkflowToOpportunity(
+              raw as BackendDetectedWorkflow,
+              id
+            );
+            return mockClone
+              ? mergeOpportunityWithMock(mapped, mockClone)
+              : mapped;
+          }
+        }
+      } catch {
+        /* fall through to mock + cache */
+      }
+    }
+
+    if (lastDetectedWorkflow && id === "internal-meeting-scheduling") {
+      const mapped = mapDetectedWorkflowToOpportunity(
+        lastDetectedWorkflow,
+        id
+      );
+      return mockClone ? mergeOpportunityWithMock(mapped, mockClone) : mapped;
+    }
+
+    return mockClone;
   },
 
-  async generateAutomation(
-    id: string,
-    rules?: Partial<AutomationRule>
-  ): Promise<AutomationRule> {
-    await delay(LATENCY);
-    const opp = opportunities.find((o) => o.id === id);
-    const base = opp?.proposedRules;
-    if (!base) throw new Error(`Unknown opportunity: ${id}`);
-    return { ...clone(base), ...rules };
+  async generateAutomation(id: string): Promise<WorkflowStep[]> {
+    const mockOpp = opportunities.find((o) => o.id === id);
+    const mockSteps = (): WorkflowStep[] =>
+      clone(mockOpp?.proposedWorkflow ?? []);
+
+    const steps = await fetchWithFallback<WorkflowStep[]>(
+      ENDPOINTS.generateAutomation,
+      mockSteps,
+      {
+        method: "POST",
+        body: lastDetectedWorkflow ? { workflow: lastDetectedWorkflow } : {},
+        map: (raw) =>
+          (raw as BackendWorkflowStep[]).map((step) => ({
+            id: step.step_id,
+            title: step.name,
+            actor: step.is_manual ? "user" : "sloth",
+            tool: step.requires_approval
+              ? "Approval"
+              : step.is_manual
+                ? "Manual"
+                : "AI",
+            durationMinutes: Math.round(step.avg_minutes),
+            description: step.description,
+          })),
+      }
+    );
+
+    return steps.length > 0 ? steps : mockSteps();
   },
 
   async forecast(id: string, rules: AutomationRule): Promise<Forecast> {
-    await delay(500);
-    const opp = opportunities.find((o) => o.id === id);
-    if (!opp) throw new Error(`Unknown opportunity: ${id}`);
-    const preview = previewSavings(rules, {
-      runsPerMonth:
-        opp.frequency.unit === "month"
-          ? opp.frequency.value
-          : opp.frequency.value * 4,
-      manualMinutesPerRun: opp.evidence.manualMinutesPerRun,
-    });
-    // Blend the base forecast with the live preview for responsiveness.
-    const likely = preview.likelyHoursPerMonth || opp.forecast.likelyHours;
-    return {
-      ...clone(opp.forecast),
-      likelyHours: likely,
-      conservativeHours: Math.round(likely * 0.7 * 10) / 10,
-      optimisticHours: Math.round(likely * 1.35 * 10) / 10,
-      annualHours: Math.round(likely * 12),
+    const mockOpp = opportunities.find((o) => o.id === id);
+
+    const mockFallback = async (): Promise<Forecast> => {
+      await mockDelay(500);
+      if (!mockOpp) return {} as Forecast;
+      const preview = previewSavings(rules, {
+        runsPerMonth:
+          mockOpp.frequency.unit === "month"
+            ? mockOpp.frequency.value
+            : mockOpp.frequency.value * 4,
+        manualMinutesPerRun: mockOpp.evidence.manualMinutesPerRun,
+      });
+      const likely =
+        preview.likelyHoursPerMonth || mockOpp.forecast.likelyHours;
+      return {
+        ...clone(mockOpp.forecast),
+        likelyHours: likely,
+        conservativeHours: Math.round(likely * 0.7 * 10) / 10,
+        optimisticHours: Math.round(likely * 1.35 * 10) / 10,
+        annualHours: Math.round(likely * 12),
+      };
     };
+
+    return fetchWithFallback<Forecast>(ENDPOINTS.forecast, mockFallback, {
+      method: "POST",
+      body: {
+        rules: toBackendAutomationRule(rules),
+        occurrence_count: lastDetectedWorkflow?.occurrence_count,
+      },
+      map: (raw) =>
+        mapForecast(raw as BackendForecastMetrics, mockOpp?.forecast),
+    });
   },
 
   async activateAutomation(
     id: string,
     rules: AutomationRule
-  ): Promise<ActiveAutomation> {
-    await delay(700);
-    const opp = opportunities.find((o) => o.id === id);
-    return {
-      id: `auto-${id}`,
-      opportunityId: id,
-      name: `${opp?.workflowName ?? "Workflow"} Assistant`,
-      status: "active",
-      approvalMode: rules.approvalMode,
-      activatedAt: new Date().toISOString(),
-      runsCompleted: 0,
-      effectivenessScore: 0,
-      estimatedMinutesSaved: 0,
-      lastActivity: new Date().toISOString(),
-      rules,
-    };
+  ): Promise<ActivateAutomationResult> {
+    const mockOpp = opportunities.find((o) => o.id === id);
+
+    return fetchWithFallback<ActivateAutomationResult>(
+      ENDPOINTS.activateAutomation,
+      async () => {
+        await mockDelay(700);
+        return {
+          automation: {
+            id: `auto-${id}`,
+            opportunityId: id,
+            name: `${mockOpp?.workflowName ?? "Workflow"} Assistant`,
+            status: "active",
+            approvalMode: rules.approvalMode,
+            activatedAt: new Date().toISOString(),
+            runsCompleted: 0,
+            effectivenessScore: 0,
+            estimatedMinutesSaved: 0,
+            lastActivity: new Date().toISOString(),
+            rules,
+          },
+          preview: {
+            triggerLabel: "New scheduling email detected",
+            slotCount: rules.maxSuggestedSlots,
+          },
+        };
+      },
+      {
+        method: "POST",
+        body: {
+          opportunity_id: id,
+          rules: toBackendAutomationRule(rules),
+        },
+        map: (raw) =>
+          mapActivationResponse(
+            raw as BackendActivationResponse,
+            id,
+            rules,
+            mockOpp?.workflowName ?? lastDetectedWorkflow?.workflow_name
+          ),
+      }
+    );
   },
 
   async getActiveAutomations(): Promise<ActiveAutomation[]> {
-    await delay(LATENCY);
+    await mockDelay();
     return clone(activeAutomations);
   },
 
   async pauseAutomation(id: string): Promise<{ ok: true }> {
-    await delay(LATENCY);
+    await mockDelay();
     void id;
     return { ok: true };
   },
 
   async getEffectiveness(_id?: string): Promise<EffectivenessMetrics> {
-    await delay(LATENCY);
     void _id;
-    return clone(effectivenessMetrics);
+    return fetchWithFallback<EffectivenessMetrics>(
+      ENDPOINTS.effectiveness,
+      async () => {
+        await mockDelay();
+        return clone(effectivenessMetrics);
+      },
+      {
+        map: (raw) => mapEffectiveness(raw as BackendEffectivenessMetrics),
+      }
+    );
   },
 
   async getNotifications(): Promise<SlothNotification[]> {
-    await delay(LATENCY);
+    await mockDelay();
     return clone(notifications);
   },
 
