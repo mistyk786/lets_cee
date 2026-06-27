@@ -22,6 +22,7 @@ _running = False
 _last_error: str | None = None
 _last_scan_at: datetime | None = None
 _next_scan_at: datetime | None = None
+_scan_in_progress = False
 
 
 def _now() -> datetime:
@@ -62,8 +63,39 @@ def stop() -> None:
 
 
 def trigger_scan(*, force_analysis: bool = False) -> dict:
-    """Run one inbox scan immediately (used by API manual trigger)."""
+    """Run one inbox scan immediately (blocks until Cursor finishes)."""
     return _scan_once(force_analysis=force_analysis)
+
+
+def trigger_scan_async(*, force_analysis: bool = False) -> dict:
+    """Start a scan in the background; returns immediately for the UI to poll."""
+    global _scan_in_progress
+
+    if _scan_in_progress:
+        snap = status()
+        snap["scan_in_progress"] = True
+        return snap
+
+    _scan_in_progress = True
+
+    def _run() -> None:
+        global _scan_in_progress
+        try:
+            _scan_once(force_analysis=force_analysis)
+        except Exception:
+            pass
+        finally:
+            _scan_in_progress = False
+
+    threading.Thread(
+        target=_run,
+        name="sloth-manual-scan",
+        daemon=True,
+    ).start()
+
+    snap = status()
+    snap["scan_in_progress"] = True
+    return snap
 
 
 def status() -> dict:
@@ -81,6 +113,7 @@ def status() -> dict:
         "last_scan_at": _last_scan_at.isoformat() if _last_scan_at else None,
         "next_scan_in_seconds": seconds_until_next,
         "last_error": _last_error,
+        "scan_in_progress": _scan_in_progress,
         **prototype_service.scan_snapshot(),
     }
 

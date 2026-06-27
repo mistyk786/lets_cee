@@ -355,6 +355,8 @@ export function mapWatcherStatus(
     automationAvailable: watcher.automation_available ?? null,
     automationSummary: watcher.automation_summary ?? null,
     workflowCategory: watcher.workflow_category ?? null,
+    initialScanDone: watcher.initial_scan_done ?? false,
+    scanInProgress: watcher.scan_in_progress ?? false,
   };
 }
 
@@ -376,6 +378,8 @@ export function mockWatcherStatus(): WatcherStatus {
     automationAvailable: null,
     automationSummary: null,
     workflowCategory: null,
+    initialScanDone: false,
+    scanInProgress: false,
   };
 }
 

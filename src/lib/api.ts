@@ -65,6 +65,7 @@ export const ENDPOINTS = {
   activateAutomation: "/api/activate-automation",
   effectiveness: "/api/effectiveness",
   watcherStatus: "/api/watcher/status",
+  watcherScan: "/api/watcher/scan",
   ingestStatus: "/api/ingest/status",
   opportunities: "/api/opportunities",
   opportunity: (id: string) => `/api/opportunities/${id}`,
@@ -96,6 +97,35 @@ async function mockDelay(ms = LATENCY): Promise<void> {
   if (!isBackendConfigured()) {
     await delay(ms);
   }
+}
+
+export type BootstrapResult = {
+  workflowName: string;
+  opportunityScore: number;
+  notifications: SlothNotification[];
+  automationAvailable: boolean;
+  automationSummary: string;
+};
+
+function mapBootstrapResponse(
+  body: BackendPrototypeBootstrapResponse
+): BootstrapResult {
+  if (body.workflow) lastDetectedWorkflow = body.workflow;
+  return {
+    workflowName: body.workflow_name,
+    opportunityScore: body.opportunity_score,
+    notifications: body.notifications.map(mapNotificationItem),
+    automationAvailable: body.automation_available !== false,
+    automationSummary: body.automation_summary ?? "",
+  };
+}
+
+async function loadCachedBootstrap(): Promise<BootstrapResult | null> {
+  const body = await fetchLiveJson<BackendPrototypeBootstrapResponse>(
+    `${ENDPOINTS.prototypeBootstrap}?force=false`,
+    { method: "POST" }
+  );
+  return body ? mapBootstrapResponse(body) : null;
 }
 
 async function fetchLiveJson<T>(path: string, init?: RequestInit): Promise<T | null> {
@@ -451,13 +481,58 @@ export const api = {
     );
   },
 
-  async bootstrapPrototype(): Promise<{
-    workflowName: string;
-    opportunityScore: number;
-    notifications: SlothNotification[];
-    automationAvailable: boolean;
-    automationSummary: string;
-  }> {
+  async runInboxAnalysis(
+    onTick?: (status: WatcherStatus | null, elapsedSec: number) => void
+  ): Promise<BootstrapResult> {
+    if (!isBackendConfigured()) {
+      return api.bootstrapPrototype();
+    }
+
+    const started = Date.now();
+    const pollStatus = async (): Promise<BackendWatcherStatus | null> => {
+      const raw = await fetchLiveJson<BackendWatcherStatus>(ENDPOINTS.watcherStatus);
+      onTick?.(
+        raw ? mapWatcherStatus(raw, undefined, "live") : null,
+        Math.floor((Date.now() - started) / 1000)
+      );
+      return raw;
+    };
+
+    let status = await pollStatus();
+    if (status?.initial_scan_done && !status.scan_in_progress) {
+      const cached = await loadCachedBootstrap();
+      if (cached) return cached;
+    }
+
+    if (!status?.scan_in_progress) {
+      await fetchLiveJson(`${ENDPOINTS.watcherScan}?background=true`, {
+        method: "POST",
+      });
+    }
+
+    const deadline = started + 120_000;
+    while (Date.now() < deadline) {
+      await delay(2000);
+      status = await pollStatus();
+      if (
+        status?.initial_scan_done &&
+        !status.scan_in_progress &&
+        status.last_scan_at
+      ) {
+        const cached = await loadCachedBootstrap();
+        if (cached) return cached;
+      }
+    }
+
+    const cached = await loadCachedBootstrap();
+    if (cached) return cached;
+
+    throw new Error(
+      "Inbox scan is taking longer than expected. Continue to the dashboard — results may appear in the bell shortly."
+    );
+  },
+
+  async bootstrapPrototype(): Promise<BootstrapResult> {
     if (!isBackendConfigured()) {
       return fetchWithFallback(
         ENDPOINTS.prototypeBootstrap,
@@ -474,29 +549,13 @@ export const api = {
         {
           method: "POST",
           body: {},
-          map: (raw) => {
-            const body = raw as BackendPrototypeBootstrapResponse;
-            if (body.workflow) lastDetectedWorkflow = body.workflow;
-            return {
-              workflowName: body.workflow_name,
-              opportunityScore: body.opportunity_score,
-              notifications: body.notifications.map(mapNotificationItem),
-              automationAvailable: body.automation_available !== false,
-              automationSummary: body.automation_summary ?? "",
-            };
-          },
+          map: (raw) => mapBootstrapResponse(raw as BackendPrototypeBootstrapResponse),
         }
       );
     }
 
-    const body = await fetchLiveOrMock<{
-      workflowName: string;
-      opportunityScore: number;
-      notifications: SlothNotification[];
-      automationAvailable: boolean;
-      automationSummary: string;
-    }>(
-      ENDPOINTS.prototypeBootstrap,
+    const body = await fetchLiveOrMock<BootstrapResult>(
+      `${ENDPOINTS.prototypeBootstrap}?force=false`,
       async () => ({
         workflowName: "",
         opportunityScore: 0,
@@ -507,17 +566,7 @@ export const api = {
       {
         method: "POST",
         body: {},
-        map: (raw) => {
-          const res = raw as BackendPrototypeBootstrapResponse;
-          if (res.workflow) lastDetectedWorkflow = res.workflow;
-          return {
-            workflowName: res.workflow_name,
-            opportunityScore: res.opportunity_score,
-            notifications: res.notifications.map(mapNotificationItem),
-            automationAvailable: res.automation_available !== false,
-            automationSummary: res.automation_summary ?? "",
-          };
-        },
+        map: (raw) => mapBootstrapResponse(raw as BackendPrototypeBootstrapResponse),
       }
     );
     return body;

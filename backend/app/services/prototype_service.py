@@ -359,19 +359,35 @@ def run_inbox_scan(*, force_analysis: bool = False) -> dict[str, Any]:
     }
 
 
-def bootstrap_prototype() -> PrototypeBootstrapResponse:
-    """Manual scan — same as watcher but returns the bootstrap API shape."""
+def bootstrap_prototype(*, force: bool = False) -> PrototypeBootstrapResponse:
+    """Manual scan — returns cached results instantly unless ``force=True``."""
+    if not force and _initial_scan_done and _last_workflow is not None:
+        return _bootstrap_response(_last_workflow, demo_mode=_last_data_source == "demo")
+
     result = run_inbox_scan(force_analysis=True)
     workflow = _last_workflow
     if workflow is None:
         workflow = analysis_service.analyse_workflow()
 
+    return _bootstrap_response(
+        workflow,
+        demo_mode=result["demo_mode"],
+        data_source=result["data_source"],
+    )
+
+
+def _bootstrap_response(
+    workflow: DetectedWorkflow,
+    *,
+    demo_mode: bool = False,
+    data_source: str | None = None,
+) -> PrototypeBootstrapResponse:
     return PrototypeBootstrapResponse(
         workflow_name=workflow.workflow_name,
         opportunity_score=workflow.opportunity_score,
         notifications=list_notifications(),
-        demo_mode=result["demo_mode"],
-        data_source=result["data_source"],
+        demo_mode=demo_mode,
+        data_source=data_source or _last_data_source,
         automation_available=workflow.automation_available,
         automation_summary=workflow.automation_summary,
         workflow_category=workflow.workflow_category,

@@ -266,4 +266,6 @@ export type WatcherStatus = {
   automationAvailable: boolean | null;
   automationSummary: string | null;
   workflowCategory: string | null;
+  initialScanDone: boolean;
+  scanInProgress: boolean;
 };

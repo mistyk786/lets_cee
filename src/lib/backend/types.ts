@@ -160,6 +160,8 @@ export type BackendWatcherStatus = {
   automation_available?: boolean | null;
   automation_summary?: string | null;
   workflow_category?: string | null;
+  initial_scan_done?: boolean;
+  scan_in_progress?: boolean;
 };
 
 /** GET /api/ingest/status — configured data sources. */

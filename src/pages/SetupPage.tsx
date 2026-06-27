@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useApp } from "@/context/AppContext";
+import type { WatcherStatus } from "@/lib/types";
 import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
 import { WatcherStatusPanel } from "@/components/layout/WatcherStatusPanel";
@@ -25,27 +26,79 @@ const ANALYSIS_STEPS = [
 
 export function SetupPage() {
   const navigate = useNavigate();
-  const { loadDemo, watcherStatus, setNotifications } = useApp();
+  const {
+    loadDemo,
+    watcherStatus,
+    setNotifications,
+    refreshNotifications,
+    refreshWatcherStatus,
+  } = useApp();
   const [analysing, setAnalysing] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
+  const [elapsedSec, setElapsedSec] = useState(0);
+  const [liveStatus, setLiveStatus] = useState<WatcherStatus | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const live = api.isLive();
 
   useEffect(() => {
     if (!analysing) return;
     const interval = setInterval(() => {
       setStepIndex((i) => Math.min(i + 1, ANALYSIS_STEPS.length - 1));
-    }, 400);
+    }, 4000);
     return () => clearInterval(interval);
   }, [analysing]);
+
+  async function finishToOverview(notifications: Awaited<
+    ReturnType<typeof api.runInboxAnalysis>
+  >["notifications"]) {
+    setNotifications(notifications);
+    await refreshNotifications();
+    await refreshWatcherStatus();
+    loadDemo();
+    navigate("/overview");
+  }
 
   async function handleAnalyse() {
     setAnalysing(true);
     setStepIndex(0);
-    const boot = await api.bootstrapPrototype();
-    setNotifications(boot.notifications);
-    loadDemo();
-    navigate("/overview");
+    setElapsedSec(0);
+    setError(null);
+    setLiveStatus(null);
+
+    try {
+      const boot = await api.runInboxAnalysis((status, elapsed) => {
+        setElapsedSec(elapsed);
+        if (status) setLiveStatus(status);
+        if (status?.initialScanDone && status.workflowName) {
+          setStepIndex(ANALYSIS_STEPS.length - 1);
+        }
+      });
+      await finishToOverview(boot.notifications);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Scan failed. You can still open the dashboard."
+      );
+      setAnalysing(false);
+    }
   }
+
+  async function handleSkipToDashboard() {
+    try {
+      const items = await api.getNotifications();
+      await finishToOverview(items);
+    } catch {
+      loadDemo();
+      navigate("/overview");
+    }
+  }
+
+  const canSkip =
+    analysing &&
+    (elapsedSec >= 8 ||
+      liveStatus?.initialScanDone ||
+      watcherStatus?.initialScanDone);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-moss-50/50 to-white">
@@ -84,6 +137,18 @@ export function SetupPage() {
               <div className="mt-8 space-y-4">
                 <WatcherStatusPanel status={watcherStatus} compact />
 
+                {watcherStatus?.initialScanDone && live && (
+                  <div className="rounded-xl border border-moss-200 bg-moss-50 px-4 py-3 text-sm text-moss-800">
+                    Inbox already scanned — clicking analyse should be instant.
+                  </div>
+                )}
+
+                {error && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    {error}
+                  </div>
+                )}
+
                 {live ? (
                   <div className="card p-5">
                     <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
@@ -93,7 +158,7 @@ export function SetupPage() {
                       <li>• Reads your real inbox via IMAP (no OAuth)</li>
                       <li>• AI detects repeated workflows across email types</li>
                       <li>• Shows “no automation available” if nothing qualifies</li>
-                      <li>• One-click draft + calendar slots only for scheduling</li>
+                      <li>• First AI scan may take up to 2 minutes</li>
                     </ul>
                   </div>
                 ) : (
@@ -136,11 +201,20 @@ export function SetupPage() {
                 </div>
               </div>
 
-              <div className="mt-8 flex justify-center">
+              <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
                 <Button size="lg" onClick={handleAnalyse}>
                   Scan inbox &amp; analyse
                   <ArrowRight size={18} />
                 </Button>
+                {live && watcherStatus?.initialScanDone && (
+                  <Button
+                    size="lg"
+                    variant="secondary"
+                    onClick={handleSkipToDashboard}
+                  >
+                    Go to dashboard
+                  </Button>
+                )}
               </div>
             </motion.div>
           ) : (
@@ -160,8 +234,16 @@ export function SetupPage() {
                 SLOTH is reading your inbox…
               </h2>
               <p className="mt-2 text-sm text-ink-500">
-                This can take 30–90 seconds while AI analyses your email.
+                AI analysis in progress ({elapsedSec}s). Usually 30–90 seconds;
+                can take up to 2 minutes on first scan.
               </p>
+
+              {liveStatus && (
+                <div className="mt-4 w-full max-w-sm">
+                  <WatcherStatusPanel status={liveStatus} compact />
+                </div>
+              )}
+
               <div className="mt-6 w-full max-w-sm space-y-2 text-left">
                 {ANALYSIS_STEPS.map((step, i) => (
                   <div
@@ -181,6 +263,16 @@ export function SetupPage() {
                   </div>
                 ))}
               </div>
+
+              {canSkip && (
+                <Button
+                  className="mt-8"
+                  variant="secondary"
+                  onClick={handleSkipToDashboard}
+                >
+                  Continue to dashboard
+                </Button>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
