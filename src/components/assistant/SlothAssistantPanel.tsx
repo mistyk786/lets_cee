@@ -1,6 +1,6 @@
 import { useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Sparkles, X, Lightbulb, Shield, Clock } from "lucide-react";
+import { X, Lightbulb, Shield, Clock } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { api } from "@/lib/api";
 import type { AssistantContext } from "@/lib/types";
@@ -67,9 +67,11 @@ export function SlothAssistantPanel() {
           >
             <div className="flex items-center justify-between border-b border-ink-100 px-5 py-4">
               <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-moss-600 text-white">
-                  <Sparkles size={16} />
-                </div>
+                <img
+                  src="/sloth-logo.png"
+                  alt=""
+                  className="h-8 w-8 rounded-xl object-cover"
+                />
                 <div>
                   <p className="text-sm font-semibold text-ink-900">
                     SLOTH Assistant

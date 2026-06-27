@@ -136,11 +136,15 @@ export function OpportunityDetailPage() {
   if (!opp || !rules || !forecast)
     return (
       <EmptyState
-        title="Opportunity not found"
-        description="This opportunity may have been removed."
+        title={api.isLive() ? "No opportunity to review" : "Opportunity not found"}
+        description={
+          api.isLive()
+            ? "Sloth did not find an automation-ready workflow. Check the bell or overview for your inbox analysis."
+            : "This opportunity may have been removed."
+        }
         action={
-          <Button onClick={() => navigate("/opportunities")}>
-            Back to Opportunities
+          <Button onClick={() => navigate(api.isLive() ? "/overview" : "/opportunities")}>
+            {api.isLive() ? "Back to overview" : "Back to Opportunities"}
           </Button>
         }
       />

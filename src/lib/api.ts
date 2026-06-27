@@ -334,14 +334,10 @@ export const api = {
     }
 
     if (lastDetectedWorkflow && id === "internal-meeting-scheduling") {
-      const mapped = mapDetectedWorkflowToOpportunity(
-        lastDetectedWorkflow,
-        id
-      );
-      return mapped;
+      return mapDetectedWorkflowToOpportunity(lastDetectedWorkflow, id);
     }
 
-    return mockClone;
+    return isBackendConfigured() ? null : mockClone;
   },
 
   async generateAutomation(id: string): Promise<WorkflowStep[]> {
@@ -457,6 +453,9 @@ export const api = {
   },
 
   async getActiveAutomations(): Promise<ActiveAutomation[]> {
+    if (isBackendConfigured()) {
+      return [];
+    }
     await mockDelay();
     return clone(activeAutomations);
   },
@@ -467,8 +466,11 @@ export const api = {
     return { ok: true };
   },
 
-  async getEffectiveness(_id?: string): Promise<EffectivenessMetrics> {
+  async getEffectiveness(_id?: string): Promise<EffectivenessMetrics | null> {
     void _id;
+    if (isBackendConfigured()) {
+      return null;
+    }
     return fetchWithFallback<EffectivenessMetrics>(
       ENDPOINTS.effectiveness,
       async () => {
@@ -638,6 +640,80 @@ export const api = {
   },
 
   getAssistantInsight(context: AssistantContext): AssistantInsight | undefined {
+    if (isBackendConfigured()) {
+      const wf = lastDetectedWorkflow;
+      const base = {
+        id: "live-assistant",
+        context,
+        title: "SLOTH Assistant",
+        suggestedActions: [] as string[],
+      };
+
+      if (context === "overview" || context === "landing") {
+        if (wf?.automation_available === false) {
+          return {
+            ...base,
+            message:
+              wf.automation_summary ||
+              "I read your inbox but did not find a workflow safe enough to automate.",
+            suggestedActions: ["Scan again"],
+          };
+        }
+        if (wf?.automation_available) {
+          return {
+            ...base,
+            message:
+              wf.automation_summary ||
+              `I found "${wf.workflow_name}" in your email (${Math.round(wf.opportunity_score)}/100).`,
+            suggestedActions: (wf.automatable_actions ?? []).slice(0, 3),
+          };
+        }
+        return {
+          ...base,
+          message:
+            "Scan your inbox from Setup. I'll tell you honestly what can and cannot be automated.",
+          suggestedActions: ["Scan inbox"],
+        };
+      }
+
+      if (context === "opportunity" || context === "workflow") {
+        if (wf) {
+          return {
+            ...base,
+            message:
+              wf.automation_summary ||
+              `This analysis is from your real inbox: "${wf.workflow_name}".`,
+            suggestedActions: (wf.automatable_actions ?? []).slice(0, 2),
+          };
+        }
+        return {
+          ...base,
+          message: "No workflow analysis yet — run an inbox scan first.",
+        };
+      }
+
+      if (context === "effectiveness" || context === "automation") {
+        return {
+          ...base,
+          message:
+            "Metrics appear after you activate an automation from a notification. Nothing runs without your approval.",
+        };
+      }
+
+      if (context === "setup") {
+        return {
+          ...base,
+          message:
+            "I'll read recent email via IMAP, detect repeatable work, and say clearly if automation isn't available.",
+        };
+      }
+
+      return {
+        ...base,
+        message: "Live mode — results come from your inbox, not demo data.",
+      };
+    }
+
     return assistantInsights.find((i) => i.context === context);
   },
 };
