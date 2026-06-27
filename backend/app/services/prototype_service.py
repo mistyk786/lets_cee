@@ -22,6 +22,8 @@ from app.schemas import DetectedWorkflow
 from app.services import activation_service, analysis_service, ingestion_service
 from app.services.pattern_service import enrich_workflow_summary, patterns_from_raw
 from app.services.imap_service import looks_like_scheduling
+from app.services.prototype_state import get_state, reset_state
+from app.request_context import get_inbox_context_key
 
 logger = logging.getLogger(__name__)
 
@@ -32,13 +34,6 @@ _ACTIONS_ID = "n-automation-actions"
 _OPPORTUNITY_ID = "internal-meeting-scheduling"
 
 _MIN_AUTOMATION_SCORE = 45
-
-_notifications: list[NotificationItem] = []
-_last_workflow: DetectedWorkflow | None = None
-_pending_incoming: dict[str, Any] | None = None
-_last_data_source: str = "demo"
-_seen_message_keys: set[str] = set()
-_initial_scan_done = False
 
 
 def _now_iso() -> str:
@@ -93,27 +88,28 @@ def _to_activation_email(email: dict[str, Any]) -> dict[str, Any]:
 
 
 def incoming_email_for_activation() -> dict[str, Any] | None:
-    return _pending_incoming
+    return get_state().pending_incoming
 
 
 def get_last_workflow() -> DetectedWorkflow | None:
-    return _last_workflow
+    return get_state().last_workflow
 
 
 def scan_snapshot() -> dict[str, Any]:
-    workflow = _last_workflow
+    state = get_state()
+    workflow = state.last_workflow
     return {
-        "notification_count": len(_notifications),
-        "data_source": _last_data_source,
-        "initial_scan_done": _initial_scan_done,
+        "notification_count": len(state.notifications),
+        "data_source": state.last_data_source,
+        "initial_scan_done": state.initial_scan_done,
         "pending_email_subject": (
-            _pending_incoming.get("subject") if _pending_incoming else None
+            state.pending_incoming.get("subject") if state.pending_incoming else None
         ),
         "workflow_name": workflow.workflow_name if workflow else None,
         "automation_available": workflow.automation_available if workflow else None,
         "automation_summary": workflow.automation_summary if workflow else None,
         "workflow_category": workflow.workflow_category if workflow else None,
-        "email_count": len(_seen_message_keys),
+        "email_count": len(state.seen_message_keys),
     }
 
 
@@ -274,29 +270,28 @@ def _build_notifications_for_workflow(
 
 def run_inbox_scan(*, force_analysis: bool = False) -> dict[str, Any]:
     """Poll inbox sources, refresh workflow + notifications when needed."""
-    global _notifications, _last_workflow, _pending_incoming
-    global _last_data_source, _initial_scan_done
+    state = get_state()
 
     raw_emails, data_source = ingestion_service.get_raw_emails(prefer_live=True)
-    _last_data_source = data_source
+    state.last_data_source = data_source
 
     new_keys = [
         key
         for email in raw_emails
-        if (key := _message_key(email)) not in _seen_message_keys
+        if (key := _message_key(email)) not in state.seen_message_keys
     ]
     for key in new_keys:
-        _seen_message_keys.add(key)
+        state.seen_message_keys.add(key)
 
     latest = _pick_latest_scheduling_email(raw_emails)
-    _pending_incoming = _to_activation_email(latest) if latest else None
+    state.pending_incoming = _to_activation_email(latest) if latest else None
 
     has_new_activity = bool(new_keys)
     should_analyze = (
         force_analysis
-        or not _initial_scan_done
+        or not state.initial_scan_done
         or has_new_activity
-        or _last_workflow is None
+        or state.last_workflow is None
     )
 
     used_demo = data_source == "demo"
@@ -308,9 +303,9 @@ def run_inbox_scan(*, force_analysis: bool = False) -> dict[str, Any]:
         pattern_report = patterns_from_raw(raw_emails)
         highlights = pattern_report.get("highlights") or []
         if highlights:
-            merged_patterns = list(dict.fromkeys([*workflow.detected_patterns, *highlights]))[
-                :10
-            ]
+            merged_patterns = list(
+                dict.fromkeys([*workflow.detected_patterns, *highlights])
+            )[:10]
             workflow = workflow.model_copy(
                 update={
                     "detected_patterns": merged_patterns,
@@ -319,8 +314,29 @@ def run_inbox_scan(*, force_analysis: bool = False) -> dict[str, Any]:
                     ),
                 }
             )
-        _last_workflow = workflow
-        _initial_scan_done = True
+        scheduling_hits = int(
+            (pattern_report.get("category_signals") or {}).get("scheduling", 0)
+        )
+        if (
+            state.pending_incoming
+            and scheduling_hits >= 2
+            and not workflow.automation_available
+        ):
+            workflow = workflow.model_copy(
+                update={
+                    "automation_available": True,
+                    "workflow_category": "scheduling",
+                    "opportunity_score": max(workflow.opportunity_score, 50.0),
+                    "automatable_actions": workflow.automatable_actions
+                    or [
+                        "propose meeting times from your calendar",
+                        "draft a personalised reply with AI",
+                        "hold a tentative calendar slot",
+                    ],
+                }
+            )
+        state.last_workflow = workflow
+        state.initial_scan_done = True
 
         incoming = incoming_email_for_activation()
         built = _build_notifications_for_workflow(
@@ -336,51 +352,60 @@ def run_inbox_scan(*, force_analysis: bool = False) -> dict[str, Any]:
                 *(n for n in built if n.id != _SCHEDULING_NOTIFICATION_ID),
             ]
 
-        _notifications = built
+        state.notifications = built
         logger.info(
             "Inbox scan analyzed workflow (source=%s, new_messages=%s, "
-            "automation_available=%s)",
+            "automation_available=%s, context=%s)",
             thread_source,
             len(new_keys),
             workflow.automation_available,
+            get_inbox_context_key(),
         )
-    elif has_new_activity and _last_workflow is not None:
+    elif has_new_activity and state.last_workflow is not None:
         incoming = incoming_email_for_activation()
-        if _can_one_click_schedule(_last_workflow, incoming):
-            updated = _build_scheduling_notification(_last_workflow, incoming)
+        if _can_one_click_schedule(state.last_workflow, incoming):
+            updated = _build_scheduling_notification(state.last_workflow, incoming)
             existing = get_notification(_SCHEDULING_NOTIFICATION_ID)
             if existing is None or existing.status != "completed":
-                _notifications = [
+                state.notifications = [
                     updated,
-                    *(n for n in _notifications if n.id != _SCHEDULING_NOTIFICATION_ID),
+                    *(
+                        n
+                        for n in state.notifications
+                        if n.id != _SCHEDULING_NOTIFICATION_ID
+                    ),
                 ]
         logger.info(
             "Inbox scan refreshed scheduling notification (source=%s)", data_source
         )
 
+    workflow = state.last_workflow
     return {
         "data_source": data_source,
         "demo_mode": used_demo,
         "new_messages": len(new_keys),
         "analyzed": should_analyze,
-        "notification_count": len(_notifications),
-        "workflow_name": _last_workflow.workflow_name if _last_workflow else None,
+        "notification_count": len(state.notifications),
+        "workflow_name": workflow.workflow_name if workflow else None,
         "automation_available": (
-            _last_workflow.automation_available if _last_workflow else False
+            workflow.automation_available if workflow else False
         ),
         "automation_summary": (
-            _last_workflow.automation_summary if _last_workflow else None
+            workflow.automation_summary if workflow else None
         ),
     }
 
 
 def bootstrap_prototype(*, force: bool = False) -> PrototypeBootstrapResponse:
     """Manual scan — returns cached results instantly unless ``force=True``."""
-    if not force and _initial_scan_done and _last_workflow is not None:
-        return _bootstrap_response(_last_workflow, demo_mode=_last_data_source == "demo")
+    state = get_state()
+    if not force and state.initial_scan_done and state.last_workflow is not None:
+        return _bootstrap_response(
+            state.last_workflow, demo_mode=state.last_data_source == "demo"
+        )
 
     result = run_inbox_scan(force_analysis=True)
-    workflow = _last_workflow
+    workflow = state.last_workflow
     if workflow is None:
         workflow = analysis_service.analyse_workflow()
 
@@ -397,12 +422,13 @@ def _bootstrap_response(
     demo_mode: bool = False,
     data_source: str | None = None,
 ) -> PrototypeBootstrapResponse:
+    state = get_state()
     return PrototypeBootstrapResponse(
         workflow_name=workflow.workflow_name,
         opportunity_score=workflow.opportunity_score,
         notifications=list_notifications(),
         demo_mode=demo_mode,
-        data_source=data_source or _last_data_source,
+        data_source=data_source or state.last_data_source,
         automation_available=workflow.automation_available,
         automation_summary=workflow.automation_summary,
         workflow_category=workflow.workflow_category,
@@ -412,24 +438,25 @@ def _bootstrap_response(
 
 
 def list_notifications() -> list[NotificationItem]:
-    return list(_notifications)
+    return list(get_state().notifications)
 
 
 def get_notification(notification_id: str) -> NotificationItem | None:
-    for item in _notifications:
+    for item in get_state().notifications:
         if item.id == notification_id:
             return item
     return None
 
 
 def automate_notification(notification_id: str) -> AutomateNotificationResponse:
+    state = get_state()
     item = get_notification(notification_id)
     if item is None:
         raise KeyError(f"Unknown notification: {notification_id}")
     if item.action != "automate":
         raise ValueError(f"Notification {notification_id} is not automatable")
 
-    workflow = _last_workflow or analysis_service.analyse_workflow()
+    workflow = state.last_workflow or analysis_service.analyse_workflow()
     incoming = incoming_email_for_activation()
     if incoming is None:
         raise ValueError("No scheduling email available to automate")
@@ -440,9 +467,14 @@ def automate_notification(notification_id: str) -> AutomateNotificationResponse:
     )
 
     updated = item.model_copy(update={"status": "completed", "read": True})
-    for index, existing in enumerate(_notifications):
+    for index, existing in enumerate(state.notifications):
         if existing.id == notification_id:
-            _notifications[index] = updated
+            state.notifications[index] = updated
             break
 
     return AutomateNotificationResponse(notification=updated, activation=activation)
+
+
+def clear_context_state() -> None:
+    """Drop cached scan results for the active inbox context."""
+    reset_state()

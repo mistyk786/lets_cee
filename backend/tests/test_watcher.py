@@ -8,14 +8,19 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.services import inbox_watcher, prototype_service
+from app.services.prototype_state import get_state, reset_state
+from app.request_context import apply_request_context
 
 client = TestClient(app)
 
 
 def test_run_inbox_scan_creates_notifications():
-    prototype_service._notifications.clear()
-    prototype_service._initial_scan_done = False
-    prototype_service._seen_message_keys.clear()
+    apply_request_context("demo", None)
+    reset_state("demo")
+    state = get_state()
+    state.notifications.clear()
+    state.initial_scan_done = False
+    state.seen_message_keys.clear()
 
     result = prototype_service.run_inbox_scan(force_analysis=True)
 

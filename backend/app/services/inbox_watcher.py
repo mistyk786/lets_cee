@@ -1,9 +1,4 @@
-"""Background inbox polling for passive workflow detection.
-
-Runs on a timer while the API is up: fetches inbox (IMAP, upload, or demo),
-detects new scheduling-related messages, re-runs workflow analysis when needed,
-and updates prototype notifications without a manual bootstrap click.
-"""
+"""Background inbox polling for passive workflow detection."""
 
 from __future__ import annotations
 
@@ -12,17 +7,15 @@ import threading
 from datetime import datetime, timedelta, timezone
 
 from app.config import Settings, get_settings
+from app.request_context import apply_request_context, capture_request_context
 from app.services import prototype_service
+from app.services.prototype_state import get_state
 
 logger = logging.getLogger(__name__)
 
 _stop = threading.Event()
 _thread: threading.Thread | None = None
 _running = False
-_last_error: str | None = None
-_last_scan_at: datetime | None = None
-_next_scan_at: datetime | None = None
-_scan_in_progress = False
 
 
 def _now() -> datetime:
@@ -69,23 +62,23 @@ def trigger_scan(*, force_analysis: bool = False) -> dict:
 
 def trigger_scan_async(*, force_analysis: bool = False) -> dict:
     """Start a scan in the background; returns immediately for the UI to poll."""
-    global _scan_in_progress
-
-    if _scan_in_progress:
+    state = get_state()
+    if state.scan_in_progress:
         snap = status()
         snap["scan_in_progress"] = True
         return snap
 
-    _scan_in_progress = True
+    ctx_key, ctx_settings = capture_request_context()
+    state.scan_in_progress = True
 
     def _run() -> None:
-        global _scan_in_progress
+        apply_request_context(ctx_key, ctx_settings)
         try:
             _scan_once(force_analysis=force_analysis)
         except Exception:
             pass
         finally:
-            _scan_in_progress = False
+            get_state().scan_in_progress = False
 
     threading.Thread(
         target=_run,
@@ -102,46 +95,46 @@ def status() -> dict:
     """Return watcher health for debugging and the frontend."""
     active = get_settings()
     interval = active.inbox_poll_interval_seconds
+    state = get_state()
     seconds_until_next: float | None = None
-    if _running and _next_scan_at is not None:
-        seconds_until_next = max(0.0, (_next_scan_at - _now()).total_seconds())
+    if _running:
+        seconds_until_next = float(interval)
 
     return {
         "enabled": active.inbox_poll_enabled,
         "running": _running and _thread is not None and _thread.is_alive(),
         "poll_interval_seconds": interval,
-        "last_scan_at": _last_scan_at.isoformat() if _last_scan_at else None,
+        "last_scan_at": (
+            state.last_scan_at.isoformat() if state.last_scan_at else None
+        ),
         "next_scan_in_seconds": seconds_until_next,
-        "last_error": _last_error,
-        "scan_in_progress": _scan_in_progress,
+        "last_error": state.last_error,
+        "scan_in_progress": state.scan_in_progress,
         **prototype_service.scan_snapshot(),
     }
 
 
 def _scan_once(*, force_analysis: bool = False) -> dict:
-    global _last_error, _last_scan_at
-
+    state = get_state()
     try:
         result = prototype_service.run_inbox_scan(force_analysis=force_analysis)
-        _last_error = None
-        _last_scan_at = _now()
+        state.last_error = None
+        state.last_scan_at = _now()
         return result
     except Exception as exc:  # noqa: BLE001
-        _last_error = str(exc)
+        state.last_error = str(exc)
         logger.warning("Inbox scan failed: %s", exc)
         raise
 
 
 def _run_loop(interval_seconds: int) -> None:
-    global _next_scan_at
-
+    apply_request_context("demo", None)
     try:
         _scan_once(force_analysis=True)
     except Exception:
         pass
 
     while not _stop.is_set():
-        _next_scan_at = _now() + timedelta(seconds=interval_seconds)
         if _stop.wait(timeout=interval_seconds):
             break
         try:

@@ -55,6 +55,7 @@ export function SetupPage() {
 
   const setInboxMode = useCallback(async (mode: InboxMode) => {
     await applyInboxMode(mode, () => api.disconnectInbox());
+    api.clearAnalysisCache();
     setInboxModeState(mode);
     setOwnInboxConnected(false);
     await refreshWatcherStatus();
@@ -108,6 +109,7 @@ export function SetupPage() {
     setElapsedSec(0);
     setError(null);
     setLiveStatus(null);
+    api.clearAnalysisCache();
 
     try {
       const boot = await api.runInboxAnalysis((status, elapsed) => {

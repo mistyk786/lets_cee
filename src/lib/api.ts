@@ -134,9 +134,9 @@ function mapBootstrapResponse(
   };
 }
 
-async function loadCachedBootstrap(): Promise<BootstrapResult | null> {
+async function loadCachedBootstrap(force = false): Promise<BootstrapResult | null> {
   const body = await fetchLiveJson<BackendPrototypeBootstrapResponse>(
-    `${ENDPOINTS.prototypeBootstrap}?force=false`,
+    `${ENDPOINTS.prototypeBootstrap}?force=${force ? "true" : "false"}`,
     { method: "POST" }
   );
   return body ? mapBootstrapResponse(body) : null;
@@ -145,10 +145,12 @@ async function loadCachedBootstrap(): Promise<BootstrapResult | null> {
 async function fetchLiveJson<T>(path: string, init?: RequestInit): Promise<T | null> {
   if (!isBackendConfigured()) return null;
   try {
+    const hasBody = init?.body !== undefined && init?.body !== null;
     const res = await fetch(`${getApiBaseUrl()}${path}`, {
       ...init,
       headers: {
         Accept: "application/json",
+        ...(hasBody ? { "Content-Type": "application/json" } : {}),
         ...inboxRequestHeaders(),
         ...init?.headers,
       },
@@ -181,7 +183,16 @@ async function fetchLiveOrMock<T>(
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
-    if (!res.ok) throw new Error(String(res.status));
+    if (!res.ok) {
+      let detail = `${res.status} ${res.statusText}`;
+      try {
+        const errBody = (await res.json()) as { detail?: string };
+        if (typeof errBody.detail === "string") detail = errBody.detail;
+      } catch {
+        /* ignore */
+      }
+      throw new Error(detail);
+    }
     const raw: unknown = await res.json();
     return map ? map(raw) : (raw as T);
   } catch (err) {
@@ -197,6 +208,10 @@ export const api = {
 
   getLastAnalysis: (): BackendDetectedWorkflow | null => lastDetectedWorkflow,
 
+  clearAnalysisCache: () => {
+    lastDetectedWorkflow = null;
+  },
+
   /**
    * Poll GET /api/watcher/status (+ optional /api/ingest/status merge).
    * Returns connectionMode "offline" when backend is configured but unreachable.
@@ -209,8 +224,12 @@ export const api = {
     const base = getApiBaseUrl();
     try {
       const [watcherRes, ingestRes] = await Promise.all([
-        fetch(`${base}${ENDPOINTS.watcherStatus}`),
-        fetch(`${base}${ENDPOINTS.ingestStatus}`).catch(() => null),
+        fetch(`${base}${ENDPOINTS.watcherStatus}`, {
+          headers: { Accept: "application/json", ...inboxRequestHeaders() },
+        }),
+        fetch(`${base}${ENDPOINTS.ingestStatus}`, {
+          headers: { Accept: "application/json", ...inboxRequestHeaders() },
+        }).catch(() => null),
       ]);
 
       if (!watcherRes.ok) {
@@ -331,7 +350,8 @@ export const api = {
     if (isBackendConfigured()) {
       try {
         const res = await fetch(
-          `${import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "")}${ENDPOINTS.opportunity(id)}`
+          `${getApiBaseUrl()}${ENDPOINTS.opportunity(id)}`,
+          { headers: { Accept: "application/json", ...inboxRequestHeaders() } }
         );
         if (res.ok) {
           const raw: unknown = await res.json();
@@ -509,6 +529,7 @@ export const api = {
       return api.bootstrapPrototype();
     }
 
+    lastDetectedWorkflow = null;
     const started = Date.now();
     const pollStatus = async (): Promise<BackendWatcherStatus | null> => {
       const raw = await fetchLiveJson<BackendWatcherStatus>(ENDPOINTS.watcherStatus);
@@ -520,18 +541,15 @@ export const api = {
     };
 
     let status = await pollStatus();
-    if (status?.initial_scan_done && !status.scan_in_progress) {
-      const cached = await loadCachedBootstrap();
-      if (cached) return cached;
-    }
 
     if (!status?.scan_in_progress) {
-      await fetchLiveJson(`${ENDPOINTS.watcherScan}?background=true`, {
-        method: "POST",
-      });
+      await fetchLiveJson(
+        `${ENDPOINTS.watcherScan}?background=true&force_analysis=true`,
+        { method: "POST" }
+      );
     }
 
-    const deadline = started + 120_000;
+    const deadline = started + 150_000;
     while (Date.now() < deadline) {
       await delay(2000);
       status = await pollStatus();
@@ -540,12 +558,12 @@ export const api = {
         !status.scan_in_progress &&
         status.last_scan_at
       ) {
-        const cached = await loadCachedBootstrap();
-        if (cached) return cached;
+        const fresh = await loadCachedBootstrap(true);
+        if (fresh) return fresh;
       }
     }
 
-    const cached = await loadCachedBootstrap();
+    const cached = await loadCachedBootstrap(true);
     if (cached) return cached;
 
     throw new Error(
@@ -701,6 +719,16 @@ export const api = {
     return raw ? raw.map(mapNotificationItem) : [];
   },
 
+  async getNotificationById(notificationId: string): Promise<SlothNotification | null> {
+    const cached = (await api.getNotifications()).find((n) => n.id === notificationId);
+    if (cached) return cached;
+    if (!isBackendConfigured()) return null;
+    const raw = await fetchLiveJson<BackendPrototypeBootstrapResponse["notifications"][number]>(
+      `/api/notifications/${notificationId}`
+    );
+    return raw ? mapNotificationItem(raw) : null;
+  },
+
   async automateNotification(
     notificationId: string,
     opportunityId: string,
@@ -708,33 +736,37 @@ export const api = {
   ): Promise<ActivateAutomationResult> {
     const mockOpp = opportunities.find((o) => o.id === opportunityId);
 
-    return fetchWithFallback<ActivateAutomationResult>(
+    if (!isBackendConfigured()) {
+      await mockDelay(900);
+      return {
+        automation: {
+          id: `auto-${opportunityId}`,
+          opportunityId,
+          name: `${mockOpp?.workflowName ?? "Workflow"} Assistant`,
+          status: "active",
+          approvalMode: rules.approvalMode,
+          activatedAt: new Date().toISOString(),
+          runsCompleted: 1,
+          effectivenessScore: 0,
+          estimatedMinutesSaved: 12,
+          lastActivity: new Date().toISOString(),
+          rules,
+        },
+        preview: {
+          triggerLabel: "New scheduling email detected",
+          draftReply:
+            "Hi,\n\nThanks for the note. Here are a few times that work:\n- Tue 10:00\n\nBest,",
+          proposedSlots: ["Tue 10:00 → 10:30"],
+          slotCount: 1,
+          tentativeEventTitle: "Quick sync next week?",
+        },
+      };
+    }
+
+    return fetchLiveOrMock<ActivateAutomationResult>(
       ENDPOINTS.automateNotification(notificationId),
       async () => {
-        await mockDelay(900);
-        return {
-          automation: {
-            id: `auto-${opportunityId}`,
-            opportunityId,
-            name: `${mockOpp?.workflowName ?? "Workflow"} Assistant`,
-            status: "active",
-            approvalMode: rules.approvalMode,
-            activatedAt: new Date().toISOString(),
-            runsCompleted: 1,
-            effectivenessScore: 0,
-            estimatedMinutesSaved: 12,
-            lastActivity: new Date().toISOString(),
-            rules,
-          },
-          preview: {
-            triggerLabel: "New scheduling email detected",
-            draftReply:
-              "Hi,\n\nThanks for the note. Here are a few times that work:\n- Tue 10:00\n\nBest,",
-            proposedSlots: ["Tue 10:00 → 10:30"],
-            slotCount: 1,
-            tentativeEventTitle: "Quick sync next week?",
-          },
-        };
+        throw new Error("Automation unavailable");
       },
       {
         method: "POST",

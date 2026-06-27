@@ -39,28 +39,10 @@ export function AutomatePage() {
       return;
     }
 
-    if (api.isLive()) {
-      fetch(
-        `${import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "")}/api/notifications/${notificationId}`
-      )
-        .then((res) => (res.ok ? res.json() : null))
-        .then((raw) => {
-          if (raw) {
-            setNotification({
-              id: raw.id,
-              title: raw.title,
-              message: raw.message,
-              createdAt: raw.created_at,
-              read: raw.read,
-              opportunityId: raw.opportunity_id,
-              recoverableMinutesPerWeek: raw.recoverable_minutes_per_week,
-              action: raw.action,
-              status: raw.status,
-            });
-          }
-        })
-        .catch(() => setError("Could not load this notification."));
-    }
+    api.getNotificationById(notificationId).then((item) => {
+      if (item) setNotification(item);
+      else setError("Could not load this notification.");
+    });
   }, [notificationId, notifications]);
 
   async function handleAutomate() {
@@ -89,8 +71,12 @@ export function AutomatePage() {
       setNotification((n) =>
         n ? { ...n, status: "completed", read: true } : n
       );
-    } catch {
-      setError("Automation failed. Check that the backend is running.");
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Automation failed. Check that the backend is running."
+      );
     } finally {
       setRunning(false);
     }
